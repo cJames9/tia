@@ -117,4 +117,3 @@ class TestTable(unittest.TestCase):
         tfT.cells.int_format()
         tfT.header.apply_format(lambda x: x.strftime('%m/%Y'))
         pdtest.assert_frame_equal(vcopy, tfT.formatted_values)
-

@@ -327,7 +327,7 @@ class HistoricalDataRequest(Request):
                        end=self.end.strftime('%Y-%m-%d'),
                        period=self.period,
         )
-        #TODO: add self.overrides if defined
+        # TODO: add self.overrides if defined
         return '<{clz}([{symbols}], [{fields}], start={start}, end={end}, period={period}'.format(**fmtargs)
 
     def new_response(self):
@@ -353,7 +353,6 @@ class HistoricalDataRequest(Request):
         self.set_flag(request, self.adjustment_abnormal, 'adjustmentAbnormal')
         self.set_flag(request, self.adjustment_split, 'adjustmentSplit')
         self.set_flag(request, self.adjustment_follow_DPDF, 'adjustmentFollowDPDF')
-
 
         if hasattr(self, 'overrides') and self.overrides is not None:
             Request.apply_overrides(request, self.overrides)

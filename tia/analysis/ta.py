@@ -71,10 +71,10 @@ def _ensure_col(arg, **kwds):
 def true_range(arg, high_col='high', low_col='low', close_col='close', skipna=0):
     """
     http://en.wikipedia.org/wiki/Average_true_range
-    The greatest of the following:
-    - Current High less the current Low
-    - Current High less the previous Close (absolute value)
-    - Curre    nt Low less the previous Close (absolute value)
+    The largest of the following:
+    - Current High minus the current Low
+    - Current High minus the previous Close (absolute value)
+    - Current Low minus the previous Close (absolute value)
     """
     _ensure_col(arg, high_col=high_col, low_col=low_col, close_col=close_col)
     yclose = arg[close_col].shift(1)

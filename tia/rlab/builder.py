@@ -269,5 +269,3 @@ class PdfBuilder(object):
 
         self.doc.build(self.story)
         # self.doc.multiBuild(self.story)
-
-

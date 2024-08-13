@@ -586,4 +586,3 @@ def TSF(series, n=14):
 
 def WILLR(frame, n=14, high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [high_col, low_col, close_col], talib.WILLR, n)
-

@@ -13,4 +13,3 @@ class Font(object):
             return self.name
         except:
             return default
-

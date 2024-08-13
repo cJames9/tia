@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     banner('HistoricalDataRequest: multi security, multi-field, weekly data')
     response = LocalTerminal.get_historical(['eurusd curncy', 'msft us equity'], ['px_last', 'px_open'], start=m,
-                                                 period='WEEKLY')
+                                            period='WEEKLY')
     print('--------- AS SINGLE TABLE ----------')
     print(response.as_frame().head(5))
 

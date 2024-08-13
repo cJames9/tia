@@ -64,7 +64,7 @@ class XmlHelper(object):
     def as_value(ele):
         """ convert the specified element as a python value """
         dtype = ele.Datatype
-        #print '%s = %s' % (ele.Name, dtype)
+        # print '%s = %s' % (ele.Name, dtype)
         if dtype in (1, 2, 3, 4, 5, 6, 7, 9, 12):
             # BOOL, CHAR, BYTE, INT32, INT64, FLOAT32, FLOAT64, BYTEARRAY, DECIMAL)
             return ele.Value

@@ -271,7 +271,7 @@ def max_drawdown(returns=None, geometric=True, dd=None, inc_date=False):
         # if mddidx == dd.index[0]:
         # # no maxff
         #    return 0 if not inc_date else (0, None)
-        #else:
+        # else:
         sub = dd[:mddidx]
         start = sub[::-1].idxmax()
         mdd = dd[mddidx]
@@ -414,7 +414,7 @@ def upside_potential_ratio(rets, mar=0, full=0, expanding=0):
 
 @per_series()
 def rolling_percentileofscore(series, window, min_periods=None):
-    """Computue the score percentile for the specified window."""
+    """Compute the score percentile for the specified window."""
     import scipy.stats as stats
 
     def _percentile(arr):

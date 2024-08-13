@@ -370,4 +370,3 @@ class BloombergInstrumentLoader(object):
                 raise Exception('SECURITY_TYP2 "%s" is not mapped' % sectype2)
         else:
             return Instruments([self.load(sid, start, end) for sid in sids])
-

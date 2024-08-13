@@ -19,6 +19,7 @@ _force_array = lambda x: isinstance(x, str) and [x] or x
 
 class SidAccessor(object):
     """ Bloomberg API accessor for a single security id (SID). """
+
     def __init__(self, sid, mgr, **overrides):
         self.sid = sid
         self.yellow_key = sid.split()[-1]
@@ -451,7 +452,3 @@ class CachedDataManager(DataManager):
             if is_fld_str:
                 result.columns = result.columns.droplevel(1)
             return result
-
-
-
-

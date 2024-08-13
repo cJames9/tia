@@ -269,7 +269,6 @@ class DynamicNumberFormat(object):
         self.formatter_args = formatter_args
         self.method = method
 
-
     def __call__(self, value, **kwargs):
         for k in list(kwargs.keys()):
             if hasattr(self, k):

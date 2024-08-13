@@ -78,7 +78,6 @@ class TestAnalysis(unittest.TestCase):
         ls = port.pl.dly_frame
         pdtest.assert_frame_equal(ls, l + s)
 
-
     def test_blotter(self):
         blotter = TradeBlotter()
         blotter.ts = datetime.now()  # all trades have same timestamp for testing
@@ -105,7 +104,6 @@ class TestAnalysis(unittest.TestCase):
         self.assertRaises(Exception, lambda: blotter.open(2, 10))
         self.assertRaises(Exception, lambda: blotter.increase(-2, 10))
         self.assertRaises(Exception, lambda: blotter.decrease(2, 10))
-
 
     def test_port(self):
         t1 = Trade(1, pd.to_datetime('3/23/2015 10:00'), 1, 10.)

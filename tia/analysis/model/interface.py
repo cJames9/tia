@@ -3,7 +3,7 @@ __all__ = ['CostCalculator', 'EodMarketData', 'MarketDataColumns', 'TxnColumns',
 
 
 class CostCalculator(object):
-    """Define the methods necessary to be able to calculator the premium for a trade."""
+    """Define the methods necessary to be able to calculate the premium for a trade."""
 
     def get_premium(self, qty, px, ts=None):
         raise NotImplementedError()
@@ -52,7 +52,6 @@ class TxnColumns(object):
         INTENT: 'trade intent',
         ACTION: 'trade action',
     }
-
 
 
 class PlColumns(object):

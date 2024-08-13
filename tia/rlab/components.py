@@ -118,4 +118,3 @@ def new_dynamic_image(path, hAlign=None):
         img = DynamicImage(path)
         hAlign and setattr(img, 'hAlign', hAlign)
         return img
-

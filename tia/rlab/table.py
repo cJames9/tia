@@ -134,7 +134,7 @@ def span_iter(series):
                 yield sorted.index[li], sorted.index[i + 1]
         else:
             li = i + 1
-    #raise StopIteration
+    # raise StopIteration
 
 
 class BorderType(object):

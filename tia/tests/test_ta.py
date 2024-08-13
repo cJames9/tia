@@ -4,6 +4,7 @@ import pandas.testing as pdtest
 import tia.analysis.ta as ta
 import numpy as np
 
+
 class TATest(unittest.TestCase):
     def test_cross(self):
         s = pd.Series([np.nan, 1, 2, 3, np.nan, 4, 5, np.nan, 4, 3, 2, 1])

@@ -91,19 +91,12 @@ class TestFormat(unittest.TestCase):
                           'flt': ['123', '1,234', '(12,345)'],
                           'ts': ['2012-01-01', '2013-01-01', '2014-01-01']}
 
-
         pt.assert_frame_equal(pd.DataFrame(expected_bycol), bycol(f))
         pt.assert_frame_equal(pd.DataFrame(expected_bycol).T, byrow(f.T))
 
         expected_bycell = {'pcts': ['10%', '23.4%', '(92.3%)'],
-                          'flt': ['123', '1.2k', '(12.3k)'],
-                          'ts': ['2012-01-01', '2013-01-01', '2014-01-01']}
+                           'flt': ['123', '1.2k', '(12.3k)'],
+                           'ts': ['2012-01-01', '2013-01-01', '2014-01-01']}
         pt.assert_frame_equal(pd.DataFrame(expected_bycell), bycell(f))
         # ensure nothing different
         pt.assert_frame_equal(pd.DataFrame(expected_bycell).T, bycell(f.T))
-
-
-
-
-
-

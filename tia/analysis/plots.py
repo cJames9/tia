@@ -6,6 +6,7 @@ from tia.analysis.perf import returns_cumulative, max_drawdown, guess_freq
 from tia.util.mplot import AxesFormat
 from tia.util.fmt import new_float_formatter
 
+
 def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None, ax=None, append=0, label=None, **plot_args):
     """ Show the cumulative return of specified rets and max drawdowns if selected."""
     crets = (1. + returns_cumulative(rets, expanding=1))
@@ -49,7 +50,7 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
 
     ax = crets.plot(figsize=figsize, title=title, ax=ax, label=label, **plot_args)
     AxesFormat().Y.apply_format(new_float_formatter()).X.label("").apply(ax)
-    #ax.tick_params(labelsize=14)
+    # ax.tick_params(labelsize=14)
     if show_maxdd:
         # find the max drawdown available by using original rets
         if isinstance(rets, pd.DataFrame):

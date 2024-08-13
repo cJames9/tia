@@ -1,4 +1,3 @@
-AlignRight = {'ALIGN': 'RIGHT'}
 import os
 import tempfile
 import itertools
@@ -11,6 +10,8 @@ from reportlab.platypus import *
 
 from tia.rlab import *
 import tia.util.fmt as fmt
+
+AlignRight = {'ALIGN': 'RIGHT'}
 
 
 def sample1():
@@ -188,13 +189,15 @@ def sample_heatmap():
     pdf.save()
     print(pdf_path)
 
+
 def runall():
     sample1()
     sample_long_table()
     sample_wide_table()
     sample_dyn_col_row_table()
-    #sample_multi_page()
+    # sample_multi_page()
     sample_heatmap()
+
 
 if __name__ == '__main__':
     runall()

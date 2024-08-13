@@ -103,11 +103,7 @@ class WinSCPBatch(object):
         cmd += ' "exit"'
         # not able to detect failures - but can raise failures when looking for expected files
         os.system(cmd)
-        #import subprocess as sub
-        #p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
-        #output, errors = p.communicate()
-        #print output
-
-
-
-
+        # import subprocess as sub
+        # p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+        # output, errors = p.communicate()
+        # print output
