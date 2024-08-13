@@ -8,6 +8,7 @@ def send_outlook_email(to, subject, body, attachments=None, cc=None, bcc=None, i
     """ Send an email using your local outlook client """
     import win32com.client
     asarr = lambda v: None if not v else isinstance(v, str) and [v] or v
+
     def update_recipients(robj, users, type):
         users = asarr(to)
         if users:
@@ -45,6 +46,7 @@ class WinSCPBatch(object):
     batch.add_download('remotefile.txt', 'c:\\temp\\winscp\\localfile.txt')
     batch.execute()
     """
+
     def __init__(self, session, logfile=None):
         self.session = session
         self.logfile = logfile

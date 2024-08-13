@@ -77,4 +77,3 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
             ax.text(dt, amt, f'mdd {dtstr}'.strip(), ha="center",
                     va="center", size=10, bbox=bbox_props)
     plt.tight_layout()
-

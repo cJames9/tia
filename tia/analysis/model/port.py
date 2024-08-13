@@ -1,3 +1,5 @@
+__all__ = ['SingleAssetPortfolio', 'PortfolioPricer', 'PortfolioSubset', 'PortfolioSummary']
+
 from collections import OrderedDict
 
 import pandas as pd
@@ -8,9 +10,6 @@ from tia.analysis.model.ret import RoiiRetCalculator
 from tia.analysis.model.txn import Txns
 from tia.analysis.util import insert_level
 from tia.util.decorator import lazy_property
-
-
-__all__ = ['SingleAssetPortfolio', 'PortfolioPricer', 'PortfolioSubset', 'PortfolioSummary']
 
 
 class PortfolioPricer(CostCalculator, EodMarketData):

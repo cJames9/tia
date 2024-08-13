@@ -1,12 +1,11 @@
+__all__ = ['per_level', 'per_series', 'sma', 'ema', 'wilderma', 'ma', 'macd', 'rsi', 'true_range', 'dmi',
+           'cross_signal', 'Signal']
+
 import pandas as pd
 import numpy as np
 
 from tia.analysis.model.trd import TradeBlotter
 from tia.analysis.util import per_level, per_series
-
-
-__all__ = ['per_level', 'per_series', 'sma', 'ema', 'wilderma', 'ma', 'macd', 'rsi', 'true_range', 'dmi',
-           'cross_signal', 'Signal']
 
 
 @per_series()

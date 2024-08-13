@@ -1,5 +1,4 @@
 """
-
 help to interface with ta-lib dealing with NaNs and returning timeseries and such
 
 """
@@ -137,8 +136,7 @@ def CDL3WHITESOLDIERS(frame, open_col='open', high_col='high', low_col='low', cl
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDL3WHITESOLDIERS)
 
 
-def CDLABANDONEDBABY(frame, penetration=.3, open_col='open', high_col='high', low_col='low',
-                     close_col='close'):
+def CDLABANDONEDBABY(frame, penetration=.3, open_col='open', high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLABANDONEDBABY, penetration)
 
 
@@ -166,8 +164,7 @@ def CDLCOUNTERATTACK(frame, open_col='open', high_col='high', low_col='low', clo
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLCOUNTERATTACK)
 
 
-def CDLDARKCLOUDCOVER(frame, penetration=.5, open_col='open', high_col='high', low_col='low',
-                      close_col='close'):
+def CDLDARKCLOUDCOVER(frame, penetration=.5, open_col='open', high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLDARKCLOUDCOVER, penetration)
 
 
@@ -187,13 +184,11 @@ def CDLENGULFING(frame, open_col='open', high_col='high', low_col='low', close_c
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLENGULFING)
 
 
-def CDLEVENINGDOJISTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low',
-                       close_col='close'):
+def CDLEVENINGDOJISTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLEVENINGDOJISTAR, penetration)
 
 
-def CDLEVENINGSTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low',
-                   close_col='close'):
+def CDLEVENINGSTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLEVENINGSTAR, penetration)
 
 
@@ -281,13 +276,11 @@ def CDLMATHOLD(frame, penetration=.5, open_col='open', high_col='high', low_col=
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLMATHOLD, penetration)
 
 
-def CDLMORNINGDOJISTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low',
-                       close_col='close'):
+def CDLMORNINGDOJISTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLMORNINGDOJISTAR, penetration)
 
 
-def CDLMORNINGSTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low',
-                   close_col='close'):
+def CDLMORNINGSTAR(frame, penetration=.3, open_col='open', high_col='high', low_col='low', close_col='close'):
     return _frame_to_series(frame, [open_col, high_col, low_col, close_col], talib.CDLMORNINGSTAR, penetration)
 
 
@@ -473,7 +466,7 @@ def MEDPRICE(frame, high_col='high', low_col='low'):
 
 
 def MFI(frame, n=14, high_col='high', low_col='low', close_col='close', vol_col='Volume'):
-    """money flow inedx"""
+    """money flow index"""
     return _frame_to_series(frame, [high_col, low_col, close_col, vol_col], talib.MFI, n)
 
 

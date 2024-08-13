@@ -1,3 +1,5 @@
+__all__ = ['ProfitAndLoss']
+
 from collections import OrderedDict
 
 import pandas as pd
@@ -7,9 +9,6 @@ from tia.analysis.model.interface import TxnColumns as TC, MarketDataColumns as 
 from tia.analysis.perf import periods_in_year, guess_freq
 from tia.util.decorator import lazy_property
 from tia.util.fmt import new_dynamic_formatter
-
-
-__all__ = ['ProfitAndLoss']
 
 
 def _dly_to_ltd(frame, dly_cols):
@@ -84,8 +83,7 @@ class OpenAverageProfitAndLossCalculator(object):
             cols = [TC.DT, TC.POS, TC.PID, TC.TID, TC.INTENT, TC.ACTION, TC.FEES, TC.QTY, TC.PX, TC.PREMIUM,
                     TC.OPEN_VAL]
             dts, pos_qtys, pids, tids, intents, sides, txn_fees, txn_qtys, txn_pxs, premiums, open_vals = [pl[c] for c
-                                                                                                           in
-                                                                                                           cols]
+                                                                                                           in cols]
 
             dvds, closing_pxs, mkt_vals = [pl[c] for c in [MC.DVDS, MC.CLOSE, MC.MKT_VAL]]
             # Ensure only end of day is kept for dividends (join will match dvd to any transaction during day
@@ -428,7 +426,7 @@ class ProfitAndLoss(object):
         :param summary_fct: function(ProfitAndLoss) and returns a dict or Series
         :param years: int, array, boolean or None. If boolean and False, then show no years. If int or array
                       show only those years, else show all years if None
-        :param ltd: include live to date summary
+        :param ltd: boolean. Include live to date summary
         :param prior_n_years: integer or list. Include summary for N years of return data prior to end date
         :param first_n_years: integer or list. Include summary for N years of return data after start date
         :param ranges: list of ranges. The range consists of a year start and year end

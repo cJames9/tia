@@ -1,3 +1,9 @@
+__all__ = ['ConditionalRedBlack', 'DynamicTable', 'TableFormatter', 'RegionFormatter', 'IntFormatter', 'FloatFormatter',
+           'PercentFormatter', 'ThousandsFormatter', 'MillionsFormatter', 'BillionsFormatter', 'DollarCentsFormatter',
+           'DollarFormatter', 'ThousandDollarsFormatter', 'MillionDollarsFormatter', 'BillionDollarsFormatter',
+           'YmdFormatter', 'Y_m_dFormatter', 'DynamicNumberFormatter', 'BorderTypeGrid', 'BorderTypeHorizontal',
+           'BorderTypeOutline', 'BorderTypeOutline', 'BorderTypeVertical', 'Style', 'BorderTypeOutlineCols']
+
 from reportlab.platypus import Table, TableStyle, Flowable
 from reportlab.lib.colors import grey, white, HexColor, black, gray
 from matplotlib.colors import rgb2hex, LinearSegmentedColormap
@@ -8,12 +14,6 @@ import pandas as pd
 from tia.rlab.components import KeepInFrame
 import tia.util.fmt as fmt
 
-
-__all__ = ['ConditionalRedBlack', 'DynamicTable', 'TableFormatter', 'RegionFormatter', 'IntFormatter', 'FloatFormatter',
-           'PercentFormatter', 'ThousandsFormatter', 'MillionsFormatter', 'BillionsFormatter', 'DollarCentsFormatter',
-           'DollarFormatter', 'ThousandDollarsFormatter', 'MillionDollarsFormatter', 'BillionDollarsFormatter',
-           'YmdFormatter', 'Y_m_dFormatter', 'DynamicNumberFormatter', 'BorderTypeGrid', 'BorderTypeHorizontal',
-           'BorderTypeOutline', 'BorderTypeOutline', 'BorderTypeVertical', 'Style', 'BorderTypeOutlineCols']
 
 DefaultHeaderStyle = {
     "GRID": (.5, grey), "BOX": (.25, black), "VALIGN": "MIDDLE", "LEADING": 6, "LEFTPADDING": 3,
@@ -134,6 +134,7 @@ def span_iter(series):
                 yield sorted.index[li], sorted.index[i + 1]
         else:
             li = i + 1
+    # BUG: this one would always raise. couldn't figure it out
     # raise StopIteration
 
 

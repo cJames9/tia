@@ -1,6 +1,10 @@
 """
 Provide a simple way to interfacing with the Bloomberg API. Provide functions for aggregating and caching
 """
+
+__all__ = ['DataManager', 'BbgDataManager', 'MemoryStorage', 'HDFStorage', 'CachedDataManager', 'Storage',
+           'CacheOnlyDataManager', 'SidAccessor', 'MultiSidAccessor']
+
 import os
 from collections import OrderedDict
 
@@ -9,10 +13,6 @@ from datetime import datetime
 
 from tia.bbg import LocalTerminal
 import tia.util.log as log
-
-
-__all__ = ['DataManager', 'BbgDataManager', 'MemoryStorage', 'HDFStorage', 'CachedDataManager', 'Storage',
-           'CacheOnlyDataManager', 'SidAccessor', 'MultiSidAccessor']
 
 _force_array = lambda x: isinstance(x, str) and [x] or x
 
@@ -392,8 +392,8 @@ class CachedDataManager(DataManager):
         for sid in sids:
             key = (sid, 'historical', dict(period=period))
             if overrides:
-                    for k, v in overrides.items():
-                        key[2][k] = v
+                for k, v in overrides.items():
+                    key[2][k] = v
 
             cached_frame, userdata = self.storage.get(key)
             if cached_frame is None:

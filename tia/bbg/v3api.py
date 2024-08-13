@@ -1,3 +1,5 @@
+__all__ = ['Terminal']
+
 from collections import defaultdict, namedtuple
 from datetime import datetime
 
@@ -15,8 +17,6 @@ FieldErrorAttrs = ['security', 'field', 'source', 'code', 'category', 'message',
 FieldError = namedtuple('FieldError', FieldErrorAttrs)
 
 logger = log.get_logger(__name__)
-
-__all__ = ['Terminal']
 
 
 class XmlHelper(object):
@@ -68,17 +68,11 @@ class XmlHelper(object):
     def as_value(ele):
         """ convert the specified element as a python value """
         dtype = ele.datatype()
-        # print '%s = %s' % (ele.name(), dtype)
         if dtype in (1, 2, 3, 4, 5, 6, 7, 9, 12):
-            # BOOL, CHAR, BYTE, INT32, INT64, FLOAT32, FLOAT64, BYTEARRAY, DECIMAL)
+            # BOOL, CHAR, BYTE, INT32, INT64, FLOAT32, FLOAT64, BYTEARRAY, DECIMAL
             return ele.getValue()
         elif dtype == 8:  # String
             val = ele.getValue()
-            """
-            if val:
-                # us centric :)
-                val = val.encode('ascii', 'replace')
-            """
             return str(val)
         elif dtype == 10:  # Date
             if ele.isNull():
@@ -121,7 +115,7 @@ class XmlHelper(object):
 
     @staticmethod
     def get_child_values(parent, names):
-        """ return a list of values for the specified child fields. If field not in Element then replace with nan. """
+        """return a list of values for the specified child fields. If field not in Element then replace with nan."""
         vals = []
         for name in names:
             if parent.hasElement(name):
@@ -132,7 +126,7 @@ class XmlHelper(object):
 
     @staticmethod
     def as_security_error(node, secid):
-        """ convert the securityError element to a SecurityError """
+        """convert the securityError element to a SecurityError"""
         assert node.name() == 'securityError'
         src = XmlHelper.get_child_value(node, 'source')
         code = XmlHelper.get_child_value(node, 'code')
@@ -143,7 +137,7 @@ class XmlHelper(object):
 
     @staticmethod
     def as_field_error(node, secid):
-        """ convert a fieldExceptions element to a FieldError or FieldError array """
+        """convert a fieldExceptions element to a FieldError or FieldError array"""
         assert node.name() == 'fieldExceptions'
         if node.isArray():
             return [XmlHelper.as_field_error(node.getValue(_), secid) for _ in range(node.numValues())]
@@ -326,7 +320,7 @@ class HistoricalDataRequest(Request):
                        start=self.start.strftime('%Y-%m-%d'),
                        end=self.end.strftime('%Y-%m-%d'),
                        period=self.period,
-        )
+                       )
         # TODO: add self.overrides if defined
         return '<{clz}([{symbols}], [{fields}], start={start}, end={end}, period={period}'.format(**fmtargs)
 

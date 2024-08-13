@@ -133,7 +133,7 @@ class NumberFormat(object):
             txt = isneg and txt[1:] or txt
             return f'{self.prefix}{lp}{txt}{self.suffix}{rp}'
         else:
-            return '{prefix}{txt}{suffix}'.format(prefix=self.prefix, txt=txt, suffix=self.suffix)
+            return f'{self.prefix}{txt}{self.suffix}'
 
 
 def new_int_formatter(commas=True, parens=True, prefix=None, suffix=None, coerce=True, nan='nan', trunc_dot_zeros=0):

@@ -95,7 +95,7 @@ def periodicity(freq_or_frame):
         else:
             return periodicity(freq)
     else:
-        raise ValueError("periodicity expects DataFrame, Series, or rule_code property")
+        raise ValueError('periodicity expects DataFrame, Series, or rule_code property')
 
 
 periods_in_year = periodicity
@@ -134,7 +134,7 @@ def returns(prices, method='simple', periods=1, fill_method='pad', limit=None, f
         return prices.pct_change(periods=periods, fill_method=fill_method, limit=limit, freq=freq)
     else:
         if freq is not None:
-            raise NotImplementedError("TODO: implement this logic if needed")
+            raise NotImplementedError('TODO: implement this logic if needed')
 
         if isinstance(prices, pd.Series):
             if fill_method is None:

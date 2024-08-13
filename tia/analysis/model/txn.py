@@ -1,3 +1,5 @@
+__all__ = ['Intent', 'Action', 'iter_txns', 'Txns']
+
 import pandas as pd
 
 from tia.util.decorator import lazy_property
@@ -5,9 +7,6 @@ from tia.analysis.model.interface import TxnColumns as TC
 from tia.analysis.model.pl import TxnProfitAndLoss
 from tia.analysis.model.ret import RoiiRetCalculator
 from tia.analysis.util import is_decrease, is_increase, crosses_zero
-
-
-__all__ = ['Intent', 'Action', 'iter_txns', 'Txns']
 
 
 class Intent(object):
@@ -39,7 +38,7 @@ class Action(object):
 
 
 def iter_txns(trds):
-    """ iterator of trades which splits trades to ensure proper long/short accounting"""
+    """iterator of trades which splits trades to ensure proper long/short accounting"""
     pos = 0
     for trd in trds:
         if pos != 0 and is_decrease(pos, trd.qty) and crosses_zero(pos, trd.qty):

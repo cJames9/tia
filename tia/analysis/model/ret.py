@@ -1,3 +1,5 @@
+__all__ = ['RoiiRetCalculator', 'AumRetCalculator', 'FixedAumRetCalculator', 'CumulativeRets', 'Performance']
+
 from collections import OrderedDict
 
 import pandas as pd
@@ -9,9 +11,6 @@ from tia.analysis.perf import drawdown_info, drawdowns, guess_freq, downside_dev
 from tia.analysis.plots import plot_return_on_dollar
 from tia.util.mplot import AxesFormat
 from tia.util.fmt import PercentFormatter, new_percent_formatter, new_float_formatter
-
-
-__all__ = ['RoiiRetCalculator', 'AumRetCalculator', 'FixedAumRetCalculator', 'CumulativeRets', 'Performance']
 
 
 def return_on_initial_capital(capital, period_pl, leverage=None):
@@ -304,19 +303,18 @@ class CumulativeRets(object):
             ax.fill_between(dd.index, 0, dd.values, facecolor='red', alpha=.25)
             fmt = PercentFormatter
 
-            AxesFormat().Y.percent().X.label("").apply(ax)
+            AxesFormat().Y.percent().X.label('').apply(ax)
             legend and ax.legend(loc='upper left', prop={'size': 12})
 
             # show the actualy date and value
             mdt, mdd = self.maxdd_dt, self.maxdd
-            bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.25)
+            bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.25)
             try:
                 dtstr = f'{mdt.to_period()}'
             except:
                 # assume daily
-            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha="center", va="top", size=8,
-                    bbox=bbox_props)
                 dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
+            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha='center', va='top', size=8, bbox=bbox_props)
 
         if title is True:
             pf = new_percent_formatter(1, parens=False, trunc_dot_zeros=True)

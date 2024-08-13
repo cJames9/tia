@@ -1,3 +1,5 @@
+__all__ = ['Positions', 'Position', 'State', 'Side']
+
 from collections import OrderedDict
 
 import pandas as pd
@@ -6,9 +8,6 @@ import numpy as np
 from tia.analysis.model.txn import Intent, Action
 from tia.analysis.model.interface import TxnPlColumns as TPL, PositionColumns as PC
 from tia.util.decorator import lazy_property
-
-
-__all__ = ['Positions', 'Position', 'State', 'Side']
 
 
 class Side(object):
@@ -256,7 +255,7 @@ class PositionsStats(object):
     # consecutive winners/losers
     @lazy_property
     def consecutive_frame(self):
-        """Return a DataFrame with columns cnt, pids, pl. cnt is the number of pids in the sequence. pl is the pl sum"""
+        """Returns a DataFrame with columns cnt, pids, pl. cnt is the number of pids in the sequence. pl is the pl sum"""
         if self._frame.empty:
             return pd.DataFrame(columns=['pids', 'pl', 'cnt', 'is_win'])
         else:

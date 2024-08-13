@@ -269,7 +269,7 @@ class ShortTermReport(object):
         figures.savefig(key='pos_rng', clear=1)
         # Plot Long Short Positions with regression line
         tmp = port.position_frame[['side', 'ret']].reset_index()
-        g = sns.lmplot("pid", "ret", col="side", hue="side", data=tmp, size=3)
+        g = sns.lmplot('pid', 'ret', col='side', hue='side', data=tmp, size=3)
         AxesFormat().Y.percent().apply()
         figures.savefig(key='pos_ls', clear=1)
         # Plot Return vs Duration
@@ -277,7 +277,7 @@ class ShortTermReport(object):
         diag_kws = {}
         if len(port.position_frame.index) <= 1:
             diag_kws = {'range': (-100, 100)}
-        sns.pairplot(tmp, hue="side", size=3, diag_kws=diag_kws)
+        sns.pairplot(tmp, hue='side', size=3, diag_kws=diag_kws)
         figures.savefig(key='pos_pair', clear=1)
 
         toimg = lambda path: rlab.new_dynamic_image(path)

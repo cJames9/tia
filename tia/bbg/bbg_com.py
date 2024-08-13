@@ -482,7 +482,6 @@ class IntrdayBarRequest(Request):
                        )
         return '<{clz}([{symbol}], interval={interval}, start={start}, end={end}, event={event}'.format(**fmtargs)
 
-
     def get_bbg_service_name(self):
         return '//blp/refdata'
 

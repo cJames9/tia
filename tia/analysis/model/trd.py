@@ -1,10 +1,9 @@
+__all__ = ['Trade', 'TradeBlotter']
+
 from itertools import count
 
 import pandas as pd
 import numpy as np
-
-
-__all__ = ['Trade', 'TradeBlotter']
 
 
 class Trade(object):

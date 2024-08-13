@@ -1,3 +1,6 @@
+__all__ = ['InstrumentPrices', 'Instrument', 'Instruments', 'load_yahoo_stock', 'load_bbg_stock', 'load_bbg_future',
+           'BloombergInstrumentLoader']
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -6,10 +9,6 @@ from pandas_datareader.data import get_data_yahoo
 
 from tia.analysis.perf import periods_in_year
 from tia.analysis.model.interface import CostCalculator, EodMarketData
-
-
-__all__ = ['InstrumentPrices', 'Instrument', 'Instruments', 'load_yahoo_stock', 'load_bbg_stock', 'load_bbg_future',
-           'BloombergInstrumentLoader']
 
 
 class InstrumentPrices(object):
@@ -353,7 +352,7 @@ class BloombergInstrumentLoader(object):
         self.end = end
 
     def load(self, sids, start=None, end=None):
-        # TODO - subclss Instrument with specified instrument type
+        # TODO - subclass Instrument with specified instrument type
         if isinstance(sids, str):
             start = start or self.start
             end = end or self.end

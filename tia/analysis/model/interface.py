@@ -111,7 +111,7 @@ class TxnPlColumns(object):
         RPL_GROSS: 'realized gross p/l (TOT_VAL - OPEN_VAL)',
         RPL: 'realized pl (RPL_GROSS + FEES + DVDS)',
         UPL: 'unrealized pl (MKT_VAL + OPEN_VAL)',
-        PL: 'Total p/l (UPL + RPL)'
+        PL: 'Total p/l (UPL + RPL)',
     }
 
 
