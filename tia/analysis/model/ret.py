@@ -127,11 +127,10 @@ class AumRetCalculator(RetCalculator):
 
 class CumulativeRets(object):
     def __init__(self, rets=None, ltd_rets=None):
-        if rets is None and ltd_rets is None:
-            raise ValueError('rets or ltd_rets must be specified')
-
         if rets is None:
-            if ltd_rets.empty:
+            if ltd_rets is None:
+                raise ValueError('rets or ltd_rets must be specified')
+            elif ltd_rets.empty:
                 rets = ltd_rets
             else:
                 rets = (1. + ltd_rets).pct_change()
@@ -311,7 +310,8 @@ class CumulativeRets(object):
             bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.25)
             try:
                 dtstr = f'{mdt.to_period()}'
-            except:
+            except Exception as e:
+                print(f'Undocumented exception on tia/analysis/model/ret: {e}')
                 # assume daily
                 dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
             ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha='center', va='top', size=8, bbox=bbox_props)

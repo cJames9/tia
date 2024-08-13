@@ -1,11 +1,10 @@
-import setuptools
 import tia
-
 
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+
 
 def read_file(path):
     with open(path, 'r') as f:
@@ -18,7 +17,7 @@ PACKAGE = 'tia'
 PACKAGE_DESC = 'Toolkit for integration and analysis'
 VERSION = tia.__version__
 URL = "https://github.com/bpsmith/tia"
-REQUIRED = ['pandas', 'numpy']
+REQUIRED = ['pandas', 'numpy', 'blpapi']
 REQUIRED_FOR_TESTS = []
 
 LONG_DESC = """\
@@ -26,7 +25,7 @@ TIA is a toolkit that provides bloomberg data access, easier pdf generation, bac
 technical analysis functionality, and return analysis.
 """
 
-setuptools.setup(
+setup(
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
     description=PACKAGE_DESC,
@@ -35,7 +34,7 @@ setuptools.setup(
     long_description=LONG_DESC,
     name=PACKAGE,
     packages=['tia', 'tia.analysis', 'tia.bbg', 'tia.rlab', 'tia.tests',
-        'tia.util', 'tia.analysis.model'],
+              'tia.util', 'tia.analysis.model'],
     package_dir={'tia': 'tia'},
     test_suite='tia.tests',
     tests_require=REQUIRED_FOR_TESTS,
@@ -51,7 +50,7 @@ setuptools.setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Office/Business :: Financial',
         'Topic :: Office/Business :: Financial :: Investment',
         'Topic :: Utilities',

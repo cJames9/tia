@@ -17,7 +17,6 @@ class InstrumentPrices(object):
         self.frame = frame
 
     def _ensure_ohlc(self, frame):
-        # missing = pd.Index(['open', 'high', 'low', 'close']).difference(frame.columns)
         missing = pd.Index(['open', 'high', 'low', 'close']) - frame.columns
         if len(missing) != 0:
             raise ValueError(f'price frame missing expected columns: {",".join([m for m in missing])}')
@@ -208,7 +207,7 @@ def get_dividends_yahoo(sid, start, end):
                      parse_dates=True, na_values='-')[::-1]
     # Yahoo! Finance sometimes does this awesome thing where they
     # return 2 rows for the most recent business day
-    if len(rs) > 2 and rs.index[-1] == rs.index[-2]:  # pragma: no cover
+    if len(rs) > 2 and rs.index[-1] == rs.index[-2]:
         rs = rs[:-1]
     return rs
 
@@ -282,7 +281,6 @@ def load_bbg_stock(sid_or_accessor, start=None, end=None, dvds=True):
         dvdframe = dvdframe.set_index('date').sort_index()
         dvdframe = dvdframe.truncate(start, end)
         # sanity check - not expected currently
-        # missing = dvdframe.index.difference(pxframe.index)
         missing = dvdframe.index - pxframe.index
         if len(missing) > 0:
             missing_dates = ','.join([m.strftime('%Y-%m-%d') for m in missing])
@@ -335,8 +333,10 @@ def load_bbg_future(sid_or_accessor, start=None, end=None):
     mult = 1.
     try:
         mult = float(accessor.FUT_VAL_PT)
-    except:
-        pass
+    except Exception as e:
+        import warnings
+        warnings.warn(f'Undocumented exception on tia/analysis/model/ins: {e}', category=ResourceWarning)
+        # pass
 
     return Instrument(sid, pxs, multiplier=mult)
 

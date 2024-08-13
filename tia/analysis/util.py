@@ -1,7 +1,6 @@
-import functools
-
 import numpy as np
 import pandas as pd
+from functools import update_wrapper
 
 
 is_decrease = lambda q1, q2: (q1 * q2) < 0
@@ -59,14 +58,14 @@ class PerLevel(object):
 
 
 class PerSeries(object):
-    def __init__(self, fct, result_is_frame=0):
+    def __init__(self, fct, result_is_frame=False):
         self.fct = fct
         self.result_is_frame = result_is_frame
-        functools.update_wrapper(self, fct)
+        update_wrapper(self, fct)
 
     def __call__(self, *args, **kwargs):
         df_or_series = args[0]
-        if isinstance(df_or_series, (np.ndarray, pd.Series)):  # or len(df_or_series.columns) == 1:
+        if isinstance(df_or_series, (np.ndarray, pd.Series)):
             return self.fct(*args, **kwargs)
         elif not isinstance(df_or_series, pd.DataFrame):
             raise ValueError(f'Expected argument to be Series or DataFrame, not {type(df_or_series)}')
@@ -88,7 +87,7 @@ class PerSeries(object):
                 return df.apply(self.fct, args=args[1:], **kwargs)
 
 
-def per_series(result_is_frame=0):
+def per_series(result_is_frame=False):
     def _ps(fct):
         return PerSeries(fct, result_is_frame=result_is_frame)
 

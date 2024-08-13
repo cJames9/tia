@@ -185,7 +185,7 @@ class PdfBuilder(object):
                 HRFlowable(width=w, thickness=t, color=c, spaceBefore=2, vAlign='MIDDLE', lineCap='square')]
 
     def new_paragraph(self, txt, style='Normal'):
-        s = self.stylesheet[style]
+        # s = self.stylesheet[style]
         return Paragraph(txt, style=self.stylesheet[style])
 
     para = new_paragraph

@@ -77,6 +77,7 @@ Utils
 - Python 3.6 or newer
 
 ### Mandatory
+- [bloomberg](http://www.bloomberglabs.com/api/libraries/)
 - [numpy](http://www.numpy.org/)
 - [pandas](http://pandas.pydata.org/)
 
@@ -86,4 +87,3 @@ Utils
 ### Optional
 - [reportlab](http://www.reportlab.com/)
 - [ta-lib](http://mrjbq7.github.io/ta-lib/)
-- [bloomberg](http://www.bloomberglabs.com/api/libraries/)

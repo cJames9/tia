@@ -4,7 +4,7 @@ collection of utilities for use on windows systems
 import os
 
 
-def send_outlook_email(to, subject, body, attachments=None, cc=None, bcc=None, is_html=0):
+def send_outlook_email(to, subject, body, attachments=None, cc=None, bcc=None, is_html=False):
     """ Send an email using your local outlook client """
     import win32com.client
     asarr = lambda v: None if not v else isinstance(v, str) and [v] or v
@@ -86,10 +86,12 @@ class WinSCPBatch(object):
     def execute(self):
         env = os.environ['PATH']
         if 'WinSCP' not in env:
-            if os.path.exists('C:\Program Files (x86)\WinSCP'):
-                os.environ['PATH'] = env + ';C:\Program Files (x86)\WinSCP'
-            elif os.path.exists('C:\Program Files\WinSCP'):
-                os.environ['PATH'] = env + ';C:\Program Files\WinSCP'
+            if os.path.exists(r'C:\Program Files (x86)\WinSCP'):
+                os.environ['PATH'] = env + r';C:\Program Files (x86)\WinSCP'
+            elif os.path.exists(r'C:\Program Files\WinSCP'):
+                os.environ['PATH'] = env + r';C:\Program Files\WinSCP'
+        else:
+            raise FileNotFoundError('could not find WinSCP')
 
         cmd = 'winscp.exe'
         if self.logfile:

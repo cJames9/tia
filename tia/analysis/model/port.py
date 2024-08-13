@@ -279,7 +279,7 @@ class PortfolioSummary(object):
         self.iter_fcts.append(siter)
         return self
 
-    def include_win_loss(self, total=1):
+    def include_win_loss(self, total=True):
         def _split_port(port):
             if total:
                 yield self.total_key, port
@@ -289,7 +289,7 @@ class PortfolioSummary(object):
         self.add_iter_fct(_split_port)
         return self
 
-    def include_long_short(self, total=1):
+    def include_long_short(self, total=True):
         def _split_port(port):
             if total:
                 yield self.total_key, port

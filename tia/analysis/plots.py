@@ -71,7 +71,9 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
             # sub = lambda c: c and len(c) > 2 and c[:2] or c
             try:
                 dtstr = f'{dt.to_period()}'
-            except:
+            except Exception as e:
+                import warnings
+                warnings.warn(f'Undocumented exception on tia/analysis/plots: {e}', category=ResourceWarning)
                 dtstr = f'{dt}'
 
             ax.text(dt, amt, f'mdd {dtstr}'.strip(), ha="center",

@@ -86,7 +86,7 @@ class XmlHelper(object):
             else:
                 v = ele.getValue()
                 now = datetime.now()
-                return datetime(year=now.year, month=now.month, day=now.day, hour=v.hour, minute=v.minute, second=v.second).time() if v else np.nan
+                return now.replace(hour=v.hour, minute=v.minute, second=v.second).time() if v else np.nan
         elif dtype == 13:  # Datetime
             if ele.isNull():
                 return pd.NaT

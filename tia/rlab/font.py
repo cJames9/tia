@@ -11,5 +11,7 @@ class Font(object):
         try:
             pdfmetrics.registerFont(TTFont(self.name, self.filename))
             return self.name
-        except:
+        except Exception as e:
+            import warnings
+            warnings.warn(f'Undocumented exception on tia/rlab/font: {e}', category=ResourceWarning)
             return default

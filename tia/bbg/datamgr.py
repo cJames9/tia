@@ -38,11 +38,10 @@ class SidAccessor(object):
         frame = self.mgr.get_attributes(self.sid, flds, **overrides)
         if self.mgr.sid_result_mode == 'frame':
             return frame
+        elif isinstance(flds, str):
+            return frame.iloc[0, 0]
         else:
-            if isinstance(flds, str):
-                return frame.iloc[0, 0]
-            else:
-                return frame.values[0].tolist()
+            return frame.values[0].tolist()
 
     def __getitem__(self, flds):
         return self.get_attributes(flds, **self.overrides)
@@ -156,28 +155,23 @@ class BbgDataManager(DataManager):
         frame = self.terminal.get_historical(sids, flds, start=start, end=end, period=period, **overrides).as_frame()
         if isinstance(sids, str):
             return frame[sids]
-        else:  # multi-indexed frame
-            if isinstance(flds, str):
-                frame.columns = frame.columns.droplevel(1)
+        elif isinstance(flds, str):  # multi-indexed frame
+            frame.columns = frame.columns.droplevel(1)
             return frame
 
 
 class Storage(object):
     def key_to_string(self, key):
         def _to_str(val):
-            if hasattr(val, 'iteritems'):
-                if val:
-                    # Sort keys to keep order and drop any null values
-                    tmp = ','.join(['{0}={1}'.format(k, _to_str(val[k])) for k in sorted(val.keys()) if val[k]])
-                    return tmp if tmp else str(None)
-                else:
-                    return str(None)
+            if not val:
+                return str(None)
+            elif hasattr(val, 'iteritems'):
+                # Sort keys to keep order and drop any null values
+                tmp = ','.join([f'{k}={_to_str(val[k])}' for k in sorted(val.keys()) if val[k]])
+                return tmp if tmp else str(None)
             elif isinstance(val, (tuple, list)):
-                if val:
-                    tmp = ','.join([_to_str(_) for _ in val])
-                    return tmp if tmp else str(None)
-                else:
-                    return str(None)
+                tmp = ','.join([_to_str(_) for _ in val])
+                return tmp if tmp else str(None)
             else:
                 sval = str(val)
                 return sval.replace('/', '-')
@@ -213,11 +207,10 @@ class HDFStorage(Storage):
     def get_store(self, write=0):
         if self._store is not None:
             return self._store
+        elif write:
+            return pd.HDFStore(self.hdfpath, mode=self.file_exists and 'a' or 'w', **self.get_store_kwargs)
         else:
-            if write:
-                return pd.HDFStore(self.hdfpath, mode=self.file_exists and 'a' or 'w', **self.get_store_kwargs)
-            else:
-                return pd.HDFStore(self.hdfpath, **self.get_store_kwargs)
+            return pd.HDFStore(self.hdfpath, **self.get_store_kwargs)
 
     @property
     def file_exists(self):

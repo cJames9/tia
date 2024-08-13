@@ -22,3 +22,11 @@
 ==================
 
 * Addressed deprecation warnings from Pandas 1.4.0
+
+1.3.0 (2024-08-13)
+==================
+
+* Removed some traces from older Python versions (namely, replaced %sand
+  and .format() string interpolation in favor of f-strings)
+* Defined Python version dependency
+* Minor code adjustments

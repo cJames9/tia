@@ -10,6 +10,7 @@ from matplotlib.colors import rgb2hex, LinearSegmentedColormap
 from matplotlib.pyplot import get_cmap
 import numpy as np
 import pandas as pd
+from itertools import product
 
 from tia.rlab.components import KeepInFrame
 import tia.util.fmt as fmt
@@ -60,7 +61,7 @@ ThousandsFormatter = pad_positive_wrapper(fmt.new_thousands_formatter(nan='-'))
 MillionsFormatter = pad_positive_wrapper(fmt.new_millions_formatter(nan='-'))
 BillionsFormatter = pad_positive_wrapper(fmt.new_billions_formatter(nan='-'))
 # Don't attempt to pad
-DynamicNumberFormatter = fmt.DynamicNumberFormat(method='col', nan='-', pcts=1, trunc_dot_zeros=1)
+DynamicNumberFormatter = fmt.DynamicNumberFormat(method='col', nan='-', pcts=True, trunc_dot_zeros=True)
 
 DollarCentsFormatter = pad_positive_wrapper(fmt.new_float_formatter(prefix='$', nan='-'))
 DollarFormatter = pad_positive_wrapper(fmt.new_int_formatter(prefix='$', nan='-'))
@@ -215,7 +216,7 @@ class Style(object):
 
     @staticmethod
     def apply_basic(formatter, font='Helvetica', font_bold='Helvetica-Bold', font_size=8, rpad=None, lpad=None,
-                    bpad=None, tpad=None, colspans=1, rowspans=0):
+                    bpad=None, tpad=None, colspans=True, rowspans=False):
         lpad = 4. / 8. * font_size if lpad is None else 3
         rpad = 4. / 8. * font_size if rpad is None else 3
         bpad = 4. / 8. * font_size if bpad is None else 4
@@ -239,7 +240,7 @@ class Style(object):
             formatter.header.iloc[:formatter.header.nrows - 1, :].detect_colspans()
 
     @staticmethod
-    def apply_color(formatter, cmap=None, font_bw=1, stripe_rows=1, stripe_cols=0,
+    def apply_color(formatter, cmap=None, font_bw=True, stripe_rows=True, stripe_cols=False,
                     hdr_border_clazz=BorderTypeGrid, cell_border_clazz=BorderTypeOutline, border_weight=.7):
         """
         font_bw: bool, If True use black and white fonts. If False, then use the cmap
@@ -318,7 +319,7 @@ class RegionFormatter(object):
     def empty_frame(self):
         return self.new_instance([], [])
 
-    def match_column_labels(self, match_value_or_fct, levels=None, max_matches=0, empty_res=1):
+    def match_column_labels(self, match_value_or_fct, levels=None, max_matches=0, empty_res=True):
         """Check the original DataFrame's column labels to find a subset of the current region
         :param match_value_or_fct: value or function(hdr_value) which returns True for match
         :param levels: [None, scalar, indexer]
@@ -336,7 +337,7 @@ class RegionFormatter(object):
         elif empty_res:
             return self.empty_frame()
 
-    def match_row_labels(self, match_value_or_fct, levels=None, max_matches=0, empty_res=1):
+    def match_row_labels(self, match_value_or_fct, levels=None, max_matches=0, empty_res=True):
         """Check the original DataFrame's row labels to find a subset of the current region
         :param match_value_or_fct: value or function(hdr_value) which returns True for match
         :param levels: [None, scalar, indexer]
@@ -354,8 +355,8 @@ class RegionFormatter(object):
         elif empty_res:
             return self.empty_frame()
 
-    def match_any_labels(self, match_value_or_fct, levels=None, max_matches=0, empty_res=1):
-        res = self.match_column_labels(match_value_or_fct, levels, max_matches, empty_res=0)
+    def match_any_labels(self, match_value_or_fct, levels=None, max_matches=0, empty_res=True):
+        res = self.match_column_labels(match_value_or_fct, levels, max_matches, empty_res=False)
         res = res or self.match_row_labels(match_value_or_fct, levels, max_matches, empty_res)
         return res
 
@@ -383,10 +384,9 @@ class RegionFormatter(object):
         :param args: arguments for the cmd
         :return: self
         """
-        for c0, c1 in self.col_coord_tuples:
-            for r0, r1 in self.row_coord_tuples:
-                c = [cmd, (c0, r0), (c1, r1)] + list(args)
-                self.style_cmds.append(c)
+        for c0, c1, r0, r1 in product(self.col_coord_tuples, self.row_coord_tuples):
+            c = [cmd, (c0, r0), (c1, r1)] + list(args)
+            self.style_cmds.append(c)
         return self
 
     def apply_styles(self, cmdmap):
@@ -411,13 +411,12 @@ class RegionFormatter(object):
         :param cbfct: function(cell_value) should return a dict of format commands to apply to that cell
         :return: self
         """
-        for ridx in range(self.nrows):
-            for cidx in range(self.ncols):
-                fmts = cbfct(self.actual_values.iloc[ridx, cidx])
-                fmts and self.iloc[ridx, cidx].apply_styles(fmts)
+        for ridx, cidx in product(range(self.nrows), range(self.ncols)):
+            fmts = cbfct(self.actual_values.iloc[ridx, cidx])
+            fmts and self.iloc[ridx, cidx].apply_styles(fmts)
         return self
 
-    def detect_colspans(self, use_actual=1):
+    def detect_colspans(self, use_actual=True):
         """Determine if any col spans are present in the values.
         :param use_actual:  if True, check actual_values for span. if False, use the formatted_values
         :return: self
@@ -430,7 +429,7 @@ class RegionFormatter(object):
                     self.style_cmds.append(['SPAN', (c0, actual_idx), (c1, actual_idx)])
         return self
 
-    def detect_rowspans(self, use_actual=1):
+    def detect_rowspans(self, use_actual=True):
         """Determine if any row spans are present in the values.
         :param use_actual:  if True, check actual_values for span. if False, use the formatted_values
         :return: self
@@ -444,7 +443,7 @@ class RegionFormatter(object):
                     self.style_cmds.append(['SPAN', (actual_idx, r0), (actual_idx, r1)])
         return self
 
-    def detect_spans(self, colspans=1, rowspans=1, use_actual=1):
+    def detect_spans(self, colspans=True, rowspans=True, use_actual=True):
         colspans and self.detect_colspans(use_actual)
         rowspans and self.detect_rowspans(use_actual)
 
@@ -454,12 +453,11 @@ class RegionFormatter(object):
         :param fmtfct: function(cell_value) which should return a formatted value for display
         :return: self
         """
-        for ridx in range(self.nrows):
-            for cidx in range(self.ncols):
-                # MUST set the parent as local view is immutable
-                riloc = self.row_ilocs[ridx]
-                ciloc = self.col_ilocs[cidx]
-                self.parent.formatted_values.iloc[riloc, ciloc] = fmtfct(self.actual_values.iloc[ridx, cidx])
+        for ridx, cidx in product(range(self.nrows), range(self.ncols)):
+            # MUST set the parent as local view is immutable
+            riloc = self.row_ilocs[ridx]
+            ciloc = self.col_ilocs[cidx]
+            self.parent.formatted_values.iloc[riloc, ciloc] = fmtfct(self.actual_values.iloc[ridx, cidx])
         return self
 
     def apply_rowattrs(self, **kwargs):
@@ -515,7 +513,7 @@ class RegionFormatter(object):
         _apply_if_avail('cspans', lambda v: v and self.detect_colspans())
         _apply_if_avail('spans', lambda v: v and (self.detect_rowspans(), self.detect_colspans()))
 
-    def apply_number_format(self, formatter, rb=1, align=1):
+    def apply_number_format(self, formatter, rb=True, align=True):
         styles = align and AlignRight or {}
         cstyles = rb and ConditionalRedBlack or None
         self.apply(format=formatter, styles=styles, cstyles=cstyles)
@@ -528,36 +526,36 @@ class RegionFormatter(object):
         f = pad_positive_wrapper(fmt_fct(**args))
         return self.apply_number_format(f, rb=rb, align=align)
 
-    def percent_format(self, rb=1, align=1, **fmt_args):
+    def percent_format(self, rb=True, align=True, **fmt_args):
         defaults = {'precision': 2, 'nan': '-'}
         return self._do_number_format(rb, align, fmt.new_percent_formatter, fmt_args, defaults)
 
-    def int_format(self, rb=1, align=1, **fmt_args):
+    def int_format(self, rb=True, align=True, **fmt_args):
         defaults = {'nan': '-'}
         return self._do_number_format(rb, align, fmt.new_int_formatter, fmt_args, defaults)
 
-    def float_format(self, rb=1, align=1, **fmt_args):
+    def float_format(self, rb=True, align=True, **fmt_args):
         defaults = {'precision': 2, 'nan': '-'}
         return self._do_number_format(rb, align, fmt.new_float_formatter, fmt_args, defaults)
 
-    def thousands_format(self, rb=1, align=1, **fmt_args):
+    def thousands_format(self, rb=True, align=True, **fmt_args):
         defaults = {'precision': 1, 'nan': '-'}
         return self._do_number_format(rb, align, fmt.new_thousands_formatter, fmt_args, defaults)
 
-    def millions_format(self, rb=1, align=1, **fmt_args):
+    def millions_format(self, rb=True, align=True, **fmt_args):
         defaults = {'precision': 1, 'nan': '-'}
         return self._do_number_format(rb, align, fmt.new_millions_formatter, fmt_args, defaults)
 
-    def billions_format(self, rb=1, align=1, **fmt_args):
+    def billions_format(self, rb=True, align=True, **fmt_args):
         defaults = {'precision': 1, 'nan': '-'}
         return self._do_number_format(rb, align, fmt.new_billions_formatter, fmt_args, defaults)
 
-    def guess_number_format(self, rb=1, align=1, **fmt_args):
+    def guess_number_format(self, rb=True, align=True, **fmt_args):
         """Determine the most appropriate formatter by inspected all the region values"""
         fct = fmt.guess_formatter(self.actual_values, **fmt_args)
         return self.apply_number_format(fct, rb=rb, align=align)
 
-    def guess_format(self, rb=1, align=1, **fmt_args):
+    def guess_format(self, rb=True, align=True, **fmt_args):
         from tia.util.fmt import NumberFormat
 
         fct = fmt.guess_formatter(self.actual_values, **fmt_args)
@@ -566,12 +564,11 @@ class RegionFormatter(object):
         else:
             return self.apply_format(fct)
 
-    def dynamic_number_format(self, rb=1, align=1, **fmt_args):
+    def dynamic_number_format(self, rb=True, align=True, **fmt_args):
         """Formatter changes based on the cell value"""
         fct = fmt.DynamicNumberFormatter(**fmt_args)
         return self.apply_number_format(fct, rb=rb, align=align)
 
-    # def heat_map(self, cmap=None, min=None, max=None, font_cmap=None):
     def heat_map(self, cmap='RdYlGn', vmin=None, vmax=None, font_cmap=None):
         if cmap is None:
             carr = ['#d7191c', '#fdae61', '#ffffff', '#a6d96a', '#1a9641']
@@ -739,7 +736,7 @@ class _RegionIX(object):
 
 
 class TableFormatter(object):
-    def __init__(self, df, inc_header=1, inc_index=1):
+    def __init__(self, df, inc_header=True, inc_index=True):
         self.df = df
         self.inc_header = inc_header
         self.inc_index = inc_index
@@ -784,7 +781,7 @@ class TableFormatter(object):
         self.cells.apply_styles(styles)
         return self
 
-    def apply_default_header_style(self, inc_index=0, **overrides):
+    def apply_default_header_style(self, inc_index=True, **overrides):
         styles = self.get_default_header_style(**overrides)
         self.header.apply_styles(styles)
         if inc_index:
@@ -796,18 +793,17 @@ class TableFormatter(object):
         self.index.apply_styles(styles)
         return self
 
-    def apply_default_style(self, inc_cells=1, inc_header=1, inc_index=1, inc_index_header=0, cells_override=None,
-                            header_override=None,
-                            index_override=None):
+    def apply_default_style(self, inc_cells=True, inc_header=True, inc_index=True, inc_index_header=True,
+                            cells_override=None, header_override=None, index_override=None):
         inc_cells and self.apply_default_cell_style(**(cells_override or {}))
         inc_header and self.apply_default_header_style(inc_index=inc_index_header, **(header_override or {}))
         inc_index and self.apply_default_index_style(**(index_override or {}))
         return self
 
     def apply_basic_style(self, font='Helvetica', font_bold='Helvetica-Bold', font_size=8, rpad=None, lpad=None,
-                          bpad=None, tpad=None, colspans=1, rowspans=0, cmap=None, font_bw=1, stripe_rows=1,
-                          stripe_cols=0,
-                          hdr_border_clazz=BorderTypeGrid, cell_border_clazz=BorderTypeOutline, border_weight=.7):
+                          bpad=None, tpad=None, colspans=True, rowspans=False, cmap=None, font_bw=True,
+                          stripe_rows=True, stripe_cols=False, hdr_border_clazz=BorderTypeGrid,
+                          cell_border_clazz=BorderTypeOutline, border_weight=.7):
         Style.apply_basic(self, font=font, font_bold=font_bold, font_size=font_size, rpad=rpad, lpad=lpad, bpad=bpad,
                           tpad=tpad, colspans=colspans, rowspans=rowspans)
         Style.apply_color(self, cmap, font_bw=font_bw, stripe_cols=stripe_cols, stripe_rows=stripe_rows,

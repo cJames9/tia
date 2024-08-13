@@ -68,8 +68,8 @@ class OpenAverageProfitAndLossCalculator(object):
             ltd_frame[TPL.PL] = 0
             return ltd_frame
         else:
-            pl.sort([TC.DT, TC.PID, TC.TID], inplace=1)
-            pl.reset_index(inplace=1, drop=1)
+            pl.sort([TC.DT, TC.PID, TC.TID], inplace=True)
+            pl.reset_index(inplace=True, drop=True)
             # check that all days can be priced
             has_position = pl[TC.PID] > 0
             missing_pxs = pl[MC.CLOSE].isnull()
@@ -89,24 +89,24 @@ class OpenAverageProfitAndLossCalculator(object):
             # Ensure only end of day is kept for dividends (join will match dvd to any transaction during day
             dvds = dvds.where(dts != dts.shift(-1), 0)
             # fill in pl dates
-            open_vals.ffill(inplace=1)
-            open_vals.fillna(0, inplace=1)
-            pos_qtys.ffill(inplace=1)
-            pos_qtys.fillna(0, inplace=1)
+            open_vals.ffill(inplace=True)
+            open_vals.fillna(0, inplace=True)
+            pos_qtys.ffill(inplace=True)
+            pos_qtys.fillna(0, inplace=True)
             # pid is the only tricky one, copy only while position is open
             inpos = intents.notnull() | (pos_qtys != 0)
             pids = np.where(inpos, pids.ffill(), 0)
             pl['pid'] = pids.astype(int)
             # Zero fill missing
-            dvds.fillna(0, inplace=1)
-            tids.fillna(0, inplace=1)
+            dvds.fillna(0, inplace=True)
+            tids.fillna(0, inplace=True)
             tids = tids.astype(int)
-            intents.fillna(0, inplace=1)
+            intents.fillna(0, inplace=True)
             intents = intents.astype(int)
-            sides.fillna(0, inplace=1)
+            sides.fillna(0, inplace=True)
             sides = sides.astype(int)
-            txn_fees.fillna(0, inplace=1)
-            premiums.fillna(0, inplace=1)
+            txn_fees.fillna(0, inplace=True)
+            premiums.fillna(0, inplace=True)
             # LTD p/l calculation
             fees = txn_fees.cumsum()
             total_vals = premiums.cumsum()
@@ -326,17 +326,16 @@ class ProfitAndLossDetails(object):
     def _repr_html_(self):
         from tia.util.fmt import new_dynamic_formatter
 
-        fmt = new_dynamic_formatter(method='row', precision=2, pcts=1, trunc_dot_zeros=1, parens=1)
+        fmt = new_dynamic_formatter(method='row', precision=2, pcts=True, trunc_dot_zeros=True, parens=True)
         return fmt(self.summary.to_frame())._repr_html_()
 
-    def plot_ltd(self, ax=None, style='k', label='ltd', show_dd=1, guess_xlabel=1, title=True):
+    def plot_ltd(self, ax=None, style='k', label='ltd', show_dd=True, guess_xlabel=True, title=True):
         ltd = self.ltd_frame.pl
         ax = ltd.plot(ax=ax, style=style, label=label)
         if show_dd:
             dd = self.drawdowns
             dd.plot(style='r', label='drawdowns', alpha=.5)
             ax.fill_between(dd.index, 0, dd.values, facecolor='red', alpha=.25)
-            fmt = lambda x: x
             # guess the formatter
             if guess_xlabel:
                 from tia.util.fmt import guess_formatter
@@ -348,14 +347,15 @@ class ProfitAndLossDetails(object):
 
             # show the actualy date and value
             mdt, mdd = self.maxdd_dt, self.maxdd
-            bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.25)
+            bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.25)
             try:
                 dtstr = f'{mdt.to_period()}'
-            except:
+            except Exception as e:
+                import warnings
+                warnings.warn(f'Undocumented exception on tia/analysis/model/pl: {e}', category=ResourceWarning)
                 # assume daily
                 dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
-            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha="center", va="top", size=8,
-                    bbox=bbox_props)
+            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha='center', va='top', size=8, bbox=bbox_props)
 
         if title is True:
             df = new_dynamic_formatter(precision=1, parens=False, trunc_dot_zeros=True)
@@ -363,8 +363,8 @@ class ProfitAndLossDetails(object):
             vol = df(self.std)
             mdd = df(self.maxdd)
             title = f'pnl {total}     vol {vol}     maxdd {mdd}'
+            ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
 
-        title and ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
         return ax
 
     def truncate(self, before=None, after=None):
@@ -420,7 +420,7 @@ class ProfitAndLoss(object):
             details = self.dly_details.truncate(before, after)
             return ProfitAndLoss(details)
 
-    def report_by_year(self, summary_fct=None, years=None, ltd=1, prior_n_yrs=None, first_n_yrs=None, ranges=None,
+    def report_by_year(self, summary_fct=None, years=None, ltd=True, prior_n_yrs=None, first_n_yrs=None, ranges=None,
                        bm_rets=None):
         """Summarize the profit and loss by year
         :param summary_fct: function(ProfitAndLoss) and returns a dict or Series
