@@ -152,7 +152,7 @@ class FigureHelper(object):
         ext = ext.startswith('.') and ext or '.' + ext
         fn = fn or uuid.uuid1()
         key = key or ''
-        fn = '%s%s%s' % (key, fn, ext)
+        fn = f'{key}{fn}{ext}'
         fn = os.path.join(self.basedir, fn)
 
         figure = self.figure

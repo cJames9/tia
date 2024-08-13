@@ -58,7 +58,7 @@ def guess_freq(index):
                 return 'A'
 
             strs = ','.join([i.strftime('%Y-%m-%d') for i in index[-lb:]])
-            raise Exception('unable to determine frequency, last %s dates %s' % (lb, strs))
+            raise Exception(f'unable to determine frequency, last {lb} dates {strs}')
 
 
 def periodicity(freq_or_frame):
@@ -72,13 +72,13 @@ def periodicity(freq_or_frame):
         if factor is not None:
             return factor / abs(freq_or_frame.n)
         else:
-            raise Exception('Failed to determine periodicity. No factor mapping for %s' % freq_or_frame)
+            raise Exception(f'Failed to determine periodicity. No factor mapping for {freq_or_frame}')
     elif isinstance(freq_or_frame, str):
         factor = PER_YEAR_MAP.get(freq_or_frame, None)
         if factor is not None:
             return factor
         else:
-            raise Exception('Failed to determine periodicity. No factor mapping for %s' % freq_or_frame)
+            raise Exception(f'Failed to determine periodicity. No factor mapping for {freq_or_frame}')
     elif isinstance(freq_or_frame, (pd.Series, pd.DataFrame, pd.TimeSeries)):
         freq = freq_or_frame.index.freq
         if not freq:
@@ -90,7 +90,7 @@ def periodicity(freq_or_frame):
                 import warnings
 
                 freq = guess_freq(freq_or_frame.index)
-                warnings.warn('frequency not set. guessed it to be %s' % freq)
+                warnings.warn(f'frequency not set. guessed it to be {freq}')
                 return periodicity(freq)
         else:
             return periodicity(freq)
@@ -112,7 +112,7 @@ def _resolve_periods_in_year(scale, frame):
     elif np.isscalar(scale):
         return scale
     else:
-        raise ValueError("scale must be None, scalar, or string, not %s" % type(scale))
+        raise ValueError(f'scale must be None, scalar, or string, not {type(scale)}')
 
 
 def excess_returns(returns, bm=0):
@@ -246,7 +246,7 @@ def drawdowns(returns, geometric=True):
         dds[dds > 0] = 0  # Can happen if first returns are positive
         return dds
     else:
-        raise ValueError('unable to process array with %s dimensions' % values.ndim)
+        raise ValueError(f'unable to process array with {values.ndim} dimensions')
 
 
 def max_drawdown(returns=None, geometric=True, dd=None, inc_date=False):
@@ -489,15 +489,15 @@ def summarize_returns(period_rets, rollup='M', prefix=1, ret_method='compound', 
 
         pds_per_yr = periodicity(resampled)
         d = OrderedDict()
-        d['{0}_ret_avg'.format(rfreq)] = ret_avg = resampled.mean()
-        d['{0}_ret_cum'.format(rfreq)] = returns_cumulative(resampled)
-        d['{0}_stdev'.format(rfreq)] = resampled.std()
-        d['{0}_stdev_ann'.format(rfreq)] = std_ann = std_annualized(resampled)
-        d['{0}_sharpe_ann'.format(rfreq)] = pds_per_yr * ret_avg / std_ann
-        d['{0}_sortino'.format(rfreq)] = sortino_ratio(resampled, full=0)
+        d[f'{rfreq}_ret_avg'] = ret_avg = resampled.mean()
+        d[f'{rfreq}_ret_cum'] = returns_cumulative(resampled)
+        d[f'{rfreq}_stdev'] = resampled.std()
+        d[f'{rfreq}_stdev_ann'] = std_ann = std_annualized(resampled)
+        d[f'{rfreq}_sharpe_ann'] = pds_per_yr * ret_avg / std_ann
+        d[f'{rfreq}_sortino'] = sortino_ratio(resampled, full=0)
         mdd = max_drawdown(rets, inc_date=1)
-        d['{0}_maxdd'.format(pfreq)] = mdd[0]
-        d['{0}_maxdd_dt'.format(pfreq)] = mdd[1]
+        d[f'{pfreq}_maxdd'] = mdd[0]
+        d[f'{pfreq}_maxdd_dt'] = mdd[1]
         return d
 
     if isinstance(period_rets, pd.DataFrame):

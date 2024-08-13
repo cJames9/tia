@@ -150,6 +150,3 @@ class Txns(object):
                 pl = self.profit_and_loss
                 result._profit_and_loss = pl.subset(result)
             return result
-
-
-

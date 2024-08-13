@@ -53,11 +53,11 @@ class SidAccessor(object):
     @property
     def currency(self):
         curr = self['CRNCY']
-        sid = '%s CURNCY' % curr
+        sid = f'{curr} CURNCY'
         return self.mgr[sid]
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.sid)
+        return f'{self.__class__.__name__}({self.sid})'
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -74,6 +74,7 @@ class SidAccessor(object):
 
 class MultiSidAccessor(object):
     """ Bloomberg API accessor for multiple security ids """
+
     def __init__(self, sids, mgr, **overrides):
         self.sids = sids
         self.yellow_keys = pd.Series({sid: sid.split()[-1] for sid in sids})
@@ -99,7 +100,7 @@ class MultiSidAccessor(object):
         return self.mgr.get_historical(self.sids, flds, start, end, period, **overrides)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ','.join(self.sids))
+        return f'{self.__class__.__name__}({",".join(self.sids)})'
 
 
 class DataManager(object):
@@ -253,9 +254,7 @@ class HDFStorage(Storage):
             store = None
             managed = self._store is None
             try:
-                #
                 # if format is table and all NaN values, then an empty table is stored. Stop this from occuring.
-                #
                 if self.format == 'table' and frame.isnull().all().all():
                     frame['__FAKE_DATA__'] = 1
 
@@ -281,8 +280,8 @@ class CacheOnlyDataManager(DataManager):
         fstr = ','.join(flds)
         ostr = ''
         if overrides:
-            ostr = ', overrides=' + ','.join(['{0}={1}'.format(str(k), str(v)) for k, v in overrides.items()])
-        msg = 'Reference data for sids={0}, flds={1}{2}'.format(sstr, fstr, ostr)
+            ostr = ', overrides=' + ','.join([f'{str(k)}={str(v)}' for k, v in overrides.items()])
+        msg = f'Reference data for sids={sstr}, flds={fstr}{ostr}'
         raise CacheMissError(msg)
 
     def get_historical(self, sids, flds, start, end, period=None, **overrides):
@@ -290,8 +289,7 @@ class CacheOnlyDataManager(DataManager):
         flds = _force_array(flds)
         sstr = ','.join(sids)
         fstr = ','.join(flds)
-        msg = 'Historical data for sids={0}, flds={1}, start={2}, end={3}, period={4}'.format(sstr, fstr, start, end,
-                                                                                              period)
+        msg = f'Historical data for sids={sstr}, flds={fstr}, start={start}, end={end}, period={period}'
         raise CacheMissError(msg)
 
 
@@ -411,8 +409,7 @@ class CachedDataManager(DataManager):
                 dirty = 0
                 # Ensure any currently stored fields are kept in synch with dates
                 if start < cache_start:
-                    self.logger.info('%s request for %s is older than data in cache %s' % (sid, ','.join(cache_columns),
-                                                                                           cache_start))
+                    self.logger.info(f'{sid} request for {",".join(cache_columns)} is older than data in cache {cache_start}')
                     previous = self.dm.get_historical(sid, cache_columns, start, cache_start)
                     # Easy way to ensure we don't dup data
                     previous = previous.loc[previous.index < cache_start]
@@ -421,7 +418,7 @@ class CachedDataManager(DataManager):
                         dirty = 1
                 if end > cache_end:
                     ccols = ','.join(cache_columns)
-                    self.logger.info('%s request for %s is more recent than data in cache %s' % (sid, ccols, cache_end))
+                    self.logger.info(f'{sid} request for {ccols} is more recent than data in cache {cache_end}')
                     post = self.dm.get_historical(sid, cache_columns, cache_end, end)
                     # Easy way to ensure we don't dup data
                     post = post.loc[post.index > cache_end]
@@ -434,10 +431,7 @@ class CachedDataManager(DataManager):
 
                 if len(missing_columns) > 0:
                     # For missing need to get maximum range to match cache. Don't want to manage pieces
-                    self.logger.info('%s: %s not in cache, requested for dates %s to %s' % (sid,
-                                                                                            ','.join(missing_columns),
-                                                                                            min(cache_start, start),
-                                                                                            max(cache_end, end)))
+                    self.logger.info(f'{sid}: {",".join(missing_columns)} not in cache, requested for dates {min(cache_start, start)} to {max(cache_end, end)}')
                     newdata = self.dm.get_historical(sid, missing_columns, min(cache_start, start), max(end, cache_end))
                     cached_frame = pd.concat([cached_frame, newdata], axis=1)
                     dirty = 1

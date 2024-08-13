@@ -70,11 +70,11 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
             bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.7)
             # sub = lambda c: c and len(c) > 2 and c[:2] or c
             try:
-                dtstr = '{0}'.format(dt.to_period())
+                dtstr = f'{dt.to_period()}'
             except:
-                dtstr = '{0}'.format(dt)
+                dtstr = f'{dt}'
 
-            ax.text(dt, amt, "mdd {0}".format(dtstr).strip(), ha="center",
+            ax.text(dt, amt, f'mdd {dtstr}'.strip(), ha="center",
                     va="center", size=10, bbox=bbox_props)
     plt.tight_layout()
 

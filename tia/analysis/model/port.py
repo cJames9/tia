@@ -16,9 +16,9 @@ __all__ = ['SingleAssetPortfolio', 'PortfolioPricer', 'PortfolioSubset', 'Portfo
 class PortfolioPricer(CostCalculator, EodMarketData):
     def __init__(self, multiplier=1., closing_pxs=None, dvds=None):
         if not isinstance(closing_pxs, pd.Series):
-            raise ValueError('closing_pxs must be a Series not {0}'.format(type(closing_pxs)))
+            raise ValueError(f'closing_pxs must be a Series, not {type(closing_pxs)}')
         if dvds is not None and not isinstance(dvds, pd.Series):
-            raise ValueError('dvds be a Series not {0}'.format(type(dvds)))
+            raise ValueError(f'dvds be a Series, not {type(dvds)}')
 
         self._multiplier = multiplier
         self._dvds = dvds
@@ -227,7 +227,7 @@ class PortfolioSummary(object):
             else:
                 # at the bottom
                 for key, child in iter_fcts[lvl](parent):
-                    idx_names = ['lvl{0}'.format(i + 1) for i in range(lvls)]
+                    idx_names = [f'lvl{i + 1}' for i in range(lvls)]
                     idx_vals = [[k] for k in keys + [key]]
                     idx = pd.MultiIndex.from_arrays(idx_vals, names=idx_names)
                     res = analyze_fct(child)
@@ -239,7 +239,7 @@ class PortfolioSummary(object):
                         for k, v in res.items():
                             # prepend current levels to key name
                             v = v.to_frame().T
-                            idx = pd.MultiIndex.from_arrays(idx_vals + [k], names=idx_names + ['lvl%s' % lvls])
+                            idx = pd.MultiIndex.from_arrays(idx_vals + [k], names=idx_names + [f'lvl{lvls}'])
                             v.index = idx
                             results.append(v)
 
@@ -267,7 +267,7 @@ class PortfolioSummary(object):
                     results = []
                     _iter_all_lvls(0, [], p, results)
                     tmp = pd.concat(results)
-                    tmp.index.names = ['lvl%s' % (i + 2) for i in range(len(tmp.index.names))]
+                    tmp.index.names = [f'lvl{(i + 2)}' for i in range(len(tmp.index.names))]
                     tmp = insert_level(tmp, k, level_name='lvl1', axis=1)
                     pieces.append(tmp)
                 return pd.concat(pieces)

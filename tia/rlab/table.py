@@ -733,7 +733,7 @@ class _RegionIX(object):
         idx = getattr(region.formatted_values, self.idx_fct_name)
         result = idx[ridx, cidx]
         if not isinstance(result, pd.DataFrame):
-            raise Exception('index %s is expected to return a DataFrame, not %s' % (key, type(result)))
+            raise Exception(f'index {key} is expected to return a DataFrame, not {type(result)}')
         return RegionFormatter(self.region.parent, result.index, result.columns)
 
 
@@ -846,8 +846,7 @@ class TableFormatter(object):
             if arr is not None:
                 if not np.isscalar(arr):
                     if len(arr) != len(self.formatted_values.index):
-                        raise ValueError(
-                            '%s: expected %s rows but got %s' % (attr, len(arr), len(self.formatted_values.index)))
+                        raise ValueError(f'{attr}: expected {len(arr)} rows but got {len(self.formatted_values.index)}')
                 self.rowattrs.loc[:, attr] = arr
         return self
 
@@ -863,8 +862,7 @@ class TableFormatter(object):
             if arr is not None:
                 if not np.isscalar(arr):
                     if len(arr) != len(self.formatted_values.columns):
-                        raise ValueError(
-                            '%s: expected %s cols but got %s' % (attr, len(arr), len(self.formatted_values.columns)))
+                        raise ValueError(f'{attr}: expected {len(arr)} cols but got {len(self.formatted_values.columns)}')
                 self.colattrs.loc[:, attr] = arr
         return self
 

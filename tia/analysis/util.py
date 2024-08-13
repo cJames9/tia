@@ -40,7 +40,7 @@ class PerLevel(object):
                 if isinstance(res, pd.Series):
                     res = res.to_frame()
                 elif not isinstance(res, pd.DataFrame):
-                    raise Exception('Expected Series or DataFrame as result not %s' % type(res))
+                    raise Exception(f'Expected Series or DataFrame as result, not {type(res)}')
 
                 arrs = [res.columns.get_level_values(lvl) for lvl in range(res.columns.nlevels)]
                 names = list(res.columns.names)
@@ -69,7 +69,7 @@ class PerSeries(object):
         if isinstance(df_or_series, (np.ndarray, pd.Series)):  # or len(df_or_series.columns) == 1:
             return self.fct(*args, **kwargs)
         elif not isinstance(df_or_series, pd.DataFrame):
-            raise ValueError("Expected argument to be Series or DataFrame not %s" % type(df_or_series))
+            raise ValueError(f'Expected argument to be Series or DataFrame, not {type(df_or_series)}')
         else:  # assume dataframe
             df = df_or_series
             if self.result_is_frame:

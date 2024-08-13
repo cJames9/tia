@@ -52,7 +52,7 @@ class WinSCPBatch(object):
         self.double_quote = lambda s: s and '""' + s + '""' or ''
 
     def add_download(self, remote, local):
-        cmd = 'get %s %s' % (self.double_quote(remote), self.double_quote(local))
+        cmd = f'get {self.double_quote(remote)} {self.double_quote(local)}'
         self.cmds.append(cmd)
 
     def add_downloads(self, filemap):
@@ -65,7 +65,7 @@ class WinSCPBatch(object):
         [self.add_download(k, v) for k, v in filemap.items()]
 
     def add_upload(self, remote, local):
-        cmd = 'put %s %s' % (self.double_quote(local), self.double_quote(remote))
+        cmd = f'put {self.double_quote(local)} {self.double_quote(remote)}'
         self.cmds.append(cmd)
 
     def add_uploads(self, filemap):
@@ -78,7 +78,7 @@ class WinSCPBatch(object):
         [self.add_upload(k, v) for k, v in filemap.items()]
 
     def add_cd(self, remote_dir):
-        cmd = 'cd %s' % remote_dir
+        cmd = 'cd {remote_dir}'
         self.cmds.append(cmd)
 
     def execute(self):
@@ -91,14 +91,14 @@ class WinSCPBatch(object):
 
         cmd = 'winscp.exe'
         if self.logfile:
-            cmd += ' /log="%s"' % self.logfile
+            cmd += f' /log="{self.logfile}"'
 
         cmd += ' /command'
         cmd += ' "option batch abort"'
         cmd += ' "option confirm off"'
-        cmd += ' "open %s"' % self.session
+        cmd += f' "open {self.session}"'
         for c in self.cmds:
-            cmd += ' "%s"' % c.strip()
+            cmd += f' "{c.strip()}"'
 
         cmd += ' "exit"'
         # not able to detect failures - but can raise failures when looking for expected files

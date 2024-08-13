@@ -122,7 +122,7 @@ class Positions(object):
                 pos.ntxns,
                 pos.state
             ])
-        cols = [PC.PID, PC.SIDE, PC.OPEN_DT, PC.CLOSE_DT, PC.OPEN_QTY, PC.OPEN_PX, PC.CLOSE_PX, PC.OPEN_PREMIUM, \
+        cols = [PC.PID, PC.SIDE, PC.OPEN_DT, PC.CLOSE_DT, PC.OPEN_QTY, PC.OPEN_PX, PC.CLOSE_PX, PC.OPEN_PREMIUM,
                 PC.PL, PC.RET, PC.DURATION, PC.NUM_TXNS, PC.STATE]
         f = pd.DataFrame.from_records(vals, columns=cols)
         f[PC.PID] = f[PC.PID].astype(int)
@@ -312,5 +312,3 @@ class PositionsStats(object):
 
         fmt = new_dynamic_formatter(method='row', precision=2, pcts=1, trunc_dot_zeros=1, parens=1)
         return fmt(self.series.to_frame())._repr_html_()
-
-

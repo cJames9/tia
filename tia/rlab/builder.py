@@ -51,10 +51,10 @@ def _to_points(ix, n):
     elif np.isscalar(ix):
         ix = (ix < 0 and ix + n) or ix
         if ix < 0 or ix >= n:
-            raise IndexError('index %s out of range (0, %s)' % (ix, n))
+            raise IndexError(f'index {ix} out of range (0, {n})')
         return ix, ix + 1
     else:
-        raise Exception('invalid indexer type %s, expected slice or scalar' % type(ix))
+        raise Exception(f'invalid indexer type {type(ix)}, expected slice or scalar')
 
 
 class GridFrame(object):
@@ -138,7 +138,7 @@ class GridTemplate(object):
 
 
 def raise_template_not_found(template_id):
-    msg = "unable to find page template with id: %s" % template_id
+    msg = f'unable to find page template with id: {template_id}'
     raise ValueError(msg)
 
 
@@ -175,7 +175,7 @@ class PdfBuilder(object):
         """Return an array of Pdf Objects which constitute a Header"""
         # Build a title bar for top of page
         w, t, c = '100%', 2, color or HexColor('#404040')
-        title = '<b>{0}</b>'.format(title)
+        title = f'<b>{title}</b>'
         if 'TitleBar' not in self.stylesheet:
             tb = ParagraphStyle('TitleBar', parent=self.stylesheet['Normal'], fontName='Helvetica-Bold', fontSize=10,
                                 leading=10, alignment=TA_CENTER)
@@ -240,7 +240,7 @@ class PdfBuilder(object):
         for idx, frame in enumerate(pt.frames):
             if frame.id not in flowable_map:
                 # Add a note to the template to show that nothing was defined for this area
-                self.story.append(Paragraph('NOT DEFINED: %s' % frame.id, getSampleStyleSheet()['Normal']))
+                self.story.append(Paragraph(f'NOT DEFINED: {frame.id}', getSampleStyleSheet()['Normal']))
             else:
                 flowables = flowable_map[frame.id]
                 if not isinstance(flowables, Flowable) and hasattr(flowables, '__iter__'):
@@ -255,7 +255,7 @@ class PdfBuilder(object):
         """Define a simple grid template. This will define nrows*ncols frames, which will be indexed starting with '0,0'
             and using numpy style indexing. So '0,1' is row 0 , col 1"""
         template = GridTemplate(template_id, nrows, ncols)
-        [template.define_frame('%s,%s' % (i, j), template[i, j]) for i in range(nrows) for j in range(ncols)]
+        [template.define_frame(f'{i},{j}', template[i, j]) for i in range(nrows) for j in range(ncols)]
         template.register(self)
         return self
 

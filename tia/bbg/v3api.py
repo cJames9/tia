@@ -106,7 +106,7 @@ class XmlHelper(object):
         elif dtype == 15:  # SEQUENCE
             return XmlHelper.get_sequence_value(ele)
         else:
-            raise NotImplementedError('Unexpected data type %s. Check documentation' % dtype)
+            raise NotImplementedError(f'Unexpected data type {dtype}. Check documentation')
 
     @staticmethod
     def get_child_value(parent, name, allow_missing=0):
@@ -115,7 +115,7 @@ class XmlHelper(object):
             if allow_missing:
                 return np.nan
             else:
-                raise Exception('failed to find child element %s in parent' % name)
+                raise Exception(f'failed to find child element {name} in parent')
         else:
             return XmlHelper.as_value(parent.getElement(name))
 
@@ -183,7 +183,7 @@ class XmlHelper(object):
 
 
 def debug_event(evt):
-    print('unhandled event: %s' % evt.EventType)
+    print(f'unhandled event: {evt.EventType}')
     if evt.EventType in [blpapi.Event.RESPONSE, blpapi.Event.PARTIAL_RESPONSE]:
         print('messages:')
         for msg in XmlHelper.message_iter(evt):
@@ -211,11 +211,11 @@ class Request(object):
 
     def raise_exception(self):
         if not self.ignore_security_error and len(self.security_errors) > 0:
-            msgs = ['(%s, %s, %s)' % (s.security, s.category, s.message) for s in self.security_errors]
-            raise Exception('SecurityError: %s' % ','.join(msgs))
+            msgs = [f'({s.security}, {s.category}, {s.message})' for s in self.security_errors]
+            raise Exception(f'SecurityError: {",".join(msgs)}')
         if not self.ignore_field_error and len(self.field_errors) > 0:
-            msgs = ['(%s, %s, %s, %s)' % (s.security, s.field, s.category, s.message) for s in self.field_errors]
-            raise Exception('FieldError: %s' % ','.join(msgs))
+            msgs = [f'({s.security}, {s.field}, {s.category}, {s.message})' for s in self.field_errors]
+            raise Exception(f'FieldError: {",".join(msgs)}')
         raise Exception('Programmer Error: No exception to raise')
 
     def get_bbg_request(self, svc, session):
@@ -414,8 +414,8 @@ class ReferenceDataRequest(Request):
         """
         Request.__init__(self, '//blp/refdata', ignore_security_error=ignore_security_error,
                          ignore_field_error=ignore_field_error)
-        self.is_single_sid = is_single_sid = isinstance(sids, str)
-        self.is_single_field = is_single_field = isinstance(fields, str)
+        self.is_single_sid = isinstance(sids, str)
+        self.is_single_field = isinstance(fields, str)
         self.sids = isinstance(sids, str) and [sids] or sids
         self.fields = isinstance(fields, str) and [fields] or fields
         self.return_formatted_value = return_formatted_value
@@ -426,7 +426,7 @@ class ReferenceDataRequest(Request):
         fmtargs = dict(clz=self.__class__.__name__,
                        sids=','.join(self.sids),
                        fields=','.join(self.fields),
-                       overrides=','.join(['%s=%s' % (k, v) for k, v in self.overrides.items()]))
+                       overrides=','.join([f'{k}={v}' for k, v in self.overrides.items()]))
         return '<{clz}([{sids}], [{fields}], overrides={overrides})'.format(**fmtargs)
 
     def new_response(self):
@@ -689,8 +689,7 @@ class Terminal(object):
         self.logger = log.instance_logger(repr(self), self)
 
     def __repr__(self):
-        fmtargs = dict(clz=self.__class__.__name__, host=self.host, port=self.port)
-        return '<{clz}({host}:{port})'.format(**fmtargs)
+        return f'<{self.__class__.__name__}({self.host}:{self.port})'
 
     def _create_session(self):
         opts = blpapi.SessionOptions()
@@ -704,9 +703,9 @@ class Terminal(object):
             raise Exception('failed to start session')
 
         try:
-            self.logger.info('executing request: %s' % repr(request))
+            self.logger.info(f'executing request: {repr(request)}')
             if not session.openService(request.svcname):
-                raise Exception('failed to open service %s' % request.svcname)
+                raise Exception(f'failed to open service {request.svcname}')
 
             svc = session.getService(request.svcname)
             asbbg = request.get_bbg_request(svc, session)
@@ -796,7 +795,7 @@ class SyncSubscription(object):
         # init subscriptions
         subs = blpapi.SubscriptionList()
         flds = ','.join(self.fields)
-        istr = self.interval and 'interval=%.1f' % self.interval or ''
+        istr = self.interval and f'interval={self.interval:.1f}' or ''
         for ticker in self.tickers:
             subs.add(ticker, flds, istr, blpapi.CorrelationId(ticker))
         session.subscribe(subs)
@@ -806,7 +805,7 @@ class SyncSubscription(object):
             if msg.messageType() == 'SubscriptionFailure':
                 sid = msg.correlationIds()[0].value()
                 desc = msg.getElement('reason').getElementAsString('description')
-                raise Exception('subscription failed sid=%s desc=%s' % (sid, desc))
+                raise Exception(f'subscription failed: sid={sid}, desc={desc}')
 
     def on_subscription_data(self, evt):
         for msg in XmlHelper.message_iter(evt):
@@ -832,7 +831,5 @@ class SyncSubscription(object):
         elif evt.eventType() == blpapi.Event.TIMEOUT:
             pass
         else:
-            logger.info('next(): ignoring event %s' % evt.eventType())
+            logger.info(f'next(): ignoring event {evt.eventType()}')
             self.check_for_updates(timeout)
-
-

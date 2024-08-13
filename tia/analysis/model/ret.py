@@ -17,7 +17,7 @@ __all__ = ['RoiiRetCalculator', 'AumRetCalculator', 'FixedAumRetCalculator', 'Cu
 def return_on_initial_capital(capital, period_pl, leverage=None):
     """Return the daily return series based on the capital"""
     if capital <= 0:
-        raise ValueError('cost must be a positive number not %s' % capital)
+        raise ValueError(f'cost must be a positive number, not {capital}')
     leverage = leverage or 1.
     eod = capital + (leverage * period_pl.cumsum())
     ltd_rets = (eod / capital) - 1.
@@ -42,14 +42,13 @@ class RoiiRetCalculator(RetCalculator):
             pass
         elif np.isscalar(leverage):
             if leverage <= 0:
-                raise ValueError('leverage must be a positive non-zero number, not %s' % leverage)
+                raise ValueError(f'leverage must be a positive non-zero number, not {leverage}')
             else:
                 get_lev = lambda ts: leverage
         elif isinstance(leverage, pd.Series):
             get_lev = lambda ts: leverage.asof(ts)
         else:
-            raise ValueError(
-                'leverage must be {None, positive scalar, Datetime/Period indexed Series} not %s' % type(leverage))
+            raise ValueError(f'leverage must be None, positive scalar or Datetime/Period indexed Series, not {type(leverage)}')
 
         self.leverage = leverage
         self.get_lev = get_lev
@@ -153,8 +152,8 @@ class CumulativeRets(object):
     def asfreq(self, freq):
         other_pds_per_year = periodicity(freq)
         if self.pds_per_year < other_pds_per_year:
-            msg = 'Cannot downsample returns. Cannot convert from %s periods/year to %s'
-            raise ValueError(msg % (self.pds_per_year, other_pds_per_year))
+            msg = 'Cannot downsample returns. Cannot convert from {0} periods/year to {1}'
+            raise ValueError(msg.format(self.pds_per_year, other_pds_per_year))
 
         if freq == 'B':
             rets = (1. + self.rets).groupby(self.rets.index.date).apply(lambda s: s.prod()) - 1.
@@ -274,13 +273,13 @@ class CumulativeRets(object):
         elif isinstance(bm_rets, CumulativeRets):
             bm = bm_rets
         else:
-            raise ValueError('bm_rets must be series or CumulativeRetPerformace not %s' % (type(bm_rets)))
+            raise ValueError(f'bm_rets must be series or CumulativeRetPerformace, not {type(bm_rets)}')
 
         bm_freq = guess_freq(bm_rets)
         if self.pds_per_year != bm.pds_per_year:
             tgt = {'B': 'dly', 'W': 'weekly', 'M': 'monthly', 'Q': 'quarterly', 'A': 'annual'}.get(bm_freq, None)
             if tgt is None:
-                raise ValueError('No mapping for handling benchmark with frequency: %s' % bm_freq)
+                raise ValueError(f'No mapping for handling benchmark with frequency: {bm_freq}')
             tmp = getattr(self, tgt)
             y = tmp.rets
             y_ann = tmp.ltd_ann
@@ -312,12 +311,12 @@ class CumulativeRets(object):
             mdt, mdd = self.maxdd_dt, self.maxdd
             bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.25)
             try:
-                dtstr = '{0}'.format(mdt.to_period())
+                dtstr = f'{mdt.to_period()}'
             except:
                 # assume daily
-                dtstr = '{0}'.format(hasattr(mdt, 'date') and mdt.date() or mdt)
-            ax.text(mdt, dd[mdt], "{1} \n {0}".format(fmt(mdd), dtstr).strip(), ha="center", va="top", size=8,
+            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha="center", va="top", size=8,
                     bbox=bbox_props)
+                dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
 
         if title is True:
             pf = new_percent_formatter(1, parens=False, trunc_dot_zeros=True)
@@ -326,8 +325,10 @@ class CumulativeRets(object):
             vol = pf(self.std_ann)
             sh = ff(self.sharpe_ann)
             mdd = pf(self.maxdd)
-            title = 'ret$\mathregular{_{ann}}$ %s     vol$\mathregular{_{ann}}$ %s     sharpe %s     maxdd %s' % (
-            total, vol, sh, mdd)
+            # matplotlib subscript and python f-strings don't work well together
+            # applying one at a time
+            title = f'ret_ann {total}     vol_ann {vol}     sharpe {sh}     maxdd {mdd}'
+            title = title.replace('_ann', r'$\mathregular{_{ann}}$')
 
         title and ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
         return ax
@@ -343,7 +344,8 @@ class CumulativeRets(object):
         ax = self.rets.hist(ax=ax, **histplot_kwargs)
         AxesFormat().X.percent(1).apply(ax)
         m, s, sk, ku = pf(self.mean), pf(self.std), ff(self.skew), ff(self.kurtosis)
-        txt = '$\mathregular{\mu}$=%s   $\mathregular{\sigma}$=%s   skew=%s   kurt=%s' % (m, s, sk, ku)
+        txt = fr'\mu={m}   \sigma={s}   skew={sk}   kurt={ku}'
+        txt = txt.replace(r'\mu', r'$\mathregular{\mu}$').replace(r'\sigma', r'$\mathregular{\sigma}$')
         bbox = dict(facecolor='white', alpha=0.5)
         ax.text(0, 1, txt, fontdict={'fontweight': 'bold'}, bbox=bbox, ha='left', va='top', transform=ax.transAxes)
         return ax
@@ -436,8 +438,8 @@ class Performance(object):
                 if bm_rets is not None:
                     abseries = performance.get_alpha_beta(bm_rets)
                     prefix = {'weekly': 'wkly ', 'monthly': 'mret '}.get(abseries.name, abseries.name)
-                    data['{0}beta'.format(prefix)] = abseries['beta']
-                    data['{0}alpha'.format(prefix)] = abseries['alpha']
+                    data[f'{prefix}beta'] = abseries['beta']
+                    data[f'{prefix}alpha'] = abseries['alpha']
                 data['avg dd'] = dly.dd_avg
                 data['best month'] = monthly.rets.max()
                 data['worst month'] = monthly.rets.min()
@@ -455,24 +457,24 @@ class Performance(object):
         if first_n_yrs:
             first_n_yrs = first_n_yrs if not np.isscalar(first_n_yrs) else [first_n_yrs]
             for first in first_n_yrs:
-                after = '12/31/%s' % (self.dly.index[0].year + first)
+                after = f'12/31/{self.dly.index[0].year + first}'
                 firstN = self.truncate(after=after)
-                results['first {0}yrs'.format(first)] = summary_fct(firstN)
+                results[f'first {first}yrs'] = summary_fct(firstN)
 
         # Ranges
         if ranges:
             for range in ranges:
                 yr_start, yr_end = range
-                rng_rets = self.truncate('1/1/%s' % yr_start, '12/31/%s' % yr_end)
-                results['{0}-{1}'.format(yr_start, yr_end)] = summary_fct(rng_rets)
+                rng_rets = self.truncate(f'1/1/{yr_start}', f'12/31/{yr_end}')
+                results[f'{yr_start}-{yr_end}'] = summary_fct(rng_rets)
 
         # Prior n years
         if prior_n_yrs:
             prior_n_yrs = prior_n_yrs if not np.isscalar(prior_n_yrs) else [prior_n_yrs]
             for prior in prior_n_yrs:
-                before = '1/1/%s' % (self.dly.index[-1].year - prior)
+                before = f'1/1/{self.dly.index[-1].year - prior}'
                 priorN = self.truncate(before)
-                results['past {0}yrs'.format(prior)] = summary_fct(priorN)
+                results[f'past {prior}yrs'] = summary_fct(priorN)
 
         # LTD
         if ltd:

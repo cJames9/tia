@@ -25,7 +25,7 @@ class MockDataManager(object):
             'FLDC': [99., 98., 97., 96.]
         }
         index = pd.date_range('1/1/2014', '1/4/2014')
-        self.hist = {'SID%s' % i: pd.DataFrame(data, index=index) for i in range(1, 4)}
+        self.hist = {f'SID{i}': pd.DataFrame(data, index=index) for i in range(1, 4)}
         self.access_cnt = 0
 
     def get_attributes(self, sids, flds, **overrides):
@@ -131,7 +131,7 @@ class TestDataManager(unittest.TestCase):
             'FLDC': [99., 98., 97., 96.]
         }
         index = pd.date_range('1/1/2014', '1/4/2014')
-        self.hist = {'SID%s' % i: pd.DataFrame(data, index=index) for i in range(1, 4)}
+        self.hist = {f'SID{i}': pd.DataFrame(data, index=index) for i in range(1, 4)}
         self.access_cnt = 0
 
     def _do_request_returns_less_cached(self, storage):

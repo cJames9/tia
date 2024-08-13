@@ -21,7 +21,7 @@ class InstrumentPrices(object):
         # missing = pd.Index(['open', 'high', 'low', 'close']).difference(frame.columns)
         missing = pd.Index(['open', 'high', 'low', 'close']) - frame.columns
         if len(missing) != 0:
-            raise ValueError('price frame missing expected columns: {0}'.format(','.join([m for m in missing])))
+            raise ValueError(f'price frame missing expected columns: {",".join([m for m in missing])}')
 
     open = property(lambda self: self.frame.open)
     high = property(lambda self: self.frame.high)
@@ -50,9 +50,9 @@ class InstrumentPrices(object):
         :return:
         """
         if model not in ('bbg', 'ln', 'pct'):
-            raise ValueError('model must be one of (bbg, ln, pct), not %s' % model)
+            raise ValueError(f'model must be one of (bbg, ln, pct), not {model}')
         if rolling not in ('simple', 'exp'):
-            raise ValueError('rolling must be one of (simple, exp), not %s' % rolling)
+            raise ValueError(f'rolling must be one of (simple, exp), not {rolling}')
 
         px = self.frame[which]
         px = px if not freq else px.resample(freq, how='last')
@@ -142,7 +142,8 @@ class Instrument(CostCalculator, EodMarketData):
         return SingleAssetPortfolio(pricer, trds, ret_calc=ret_calc)
 
     def __repr__(self):
-        return '%s(%r, mult=%s)' % (self.__class__.__name__, self.sid, self.multiplier)
+        return f'{self.__class__.__name__}({repr(self.sid)}, mult={self.multiplier})'
+        # return '%s(%r, mult=%s)' % (self.__class__.__name__, self.sid, self.multiplier)
 
 
 class Instruments(object):
@@ -152,7 +153,7 @@ class Instruments(object):
         elif isinstance(instruments, (tuple, list)):
             instruments = pd.Series(instruments, index=[i.sid for i in instruments])
         elif not isinstance(instruments, pd.Series):
-            raise ValueError('instruments must be None, tuple, list, or Series. Not %s' % type(instruments))
+            raise ValueError(f'instruments must be None, tuple, list, or Series. Not {type(instruments)}')
         self._instruments = instruments
 
     sids = property(lambda self: self._instruments.index)
@@ -183,7 +184,7 @@ class Instruments(object):
         return pd.concat(list(kvals.values()), axis=1, keys=list(kvals.keys()))
 
     def __repr__(self):
-        return '[{0}]'.format(','.join([repr(i) for i in self._instruments]))
+        return f'[{",".join([repr(i) for i in self._instruments])}]'
 
 
 def get_dividends_yahoo(sid, start, end):
@@ -192,13 +193,13 @@ def get_dividends_yahoo(sid, start, end):
     from pandas.io.common import urlopen
 
     start, end = pd.to_datetime(start), pd.to_datetime(end)
-    url = ('http://ichart.finance.yahoo.com/table.csv?' + 's=%s' % sid +
-           '&a=%s' % (start.month - 1) +
-           '&b=%s' % start.day +
-           '&c=%s' % start.year +
-           '&d=%s' % (end.month - 1) +
-           '&e=%s' % end.day +
-           '&f=%s' % end.year +
+    url = ('http://ichart.finance.yahoo.com/table.csv?' + f's={sid}' +
+           f'&a={(start.month - 1)}' +
+           f'&b={start.day}' +
+           f'&c={start.year}' +
+           f'&d={(end.month - 1)}' +
+           f'&e={end.day}' +
+           f'&f={end.year}' +
            '&g=v' +  # THE CHANGE
            '&ignore=.csv')
 
@@ -251,7 +252,7 @@ def _resolve_accessor(sid_or_accessor):
         from tia.bbg import SidAccessor
 
         if not isinstance(sid_or_accessor, SidAccessor):
-            raise ValueError('sid_or_accessor must be either a string or SidAccessor not %s' % type(sid_or_accessor))
+            raise ValueError(f'sid_or_accessor must be either a string or SidAccessor, not {type(sid_or_accessor)}')
         return sid_or_accessor
 
 
@@ -286,7 +287,7 @@ def load_bbg_stock(sid_or_accessor, start=None, end=None, dvds=True):
         missing = dvdframe.index - pxframe.index
         if len(missing) > 0:
             missing_dates = ','.join([m.strftime('%Y-%m-%d') for m in missing])
-            raise Exception('dividends occur on non-business day, not expecting this. %s' % missing_dates)
+            raise Exception(f'dividends occur on non-business day, not expecting this. {missing_dates}')
         # another sanity check to ensure yahoo rolls dividends up, in case a special occurs on same day
         if not dvdframe.index.is_unique:
             dvdframe = dvdframe.groupby(lambda x: x).sum()
@@ -367,6 +368,6 @@ class BloombergInstrumentLoader(object):
             elif sectype2 in self.StockTypes:
                 return load_bbg_stock(accessor, start=start, end=end)
             else:
-                raise Exception('SECURITY_TYP2 "%s" is not mapped' % sectype2)
+                raise Exception(f'SECURITY_TYP2 "{sectype2}" is not mapped')
         else:
             return Instruments([self.load(sid, start, end) for sid in sids])

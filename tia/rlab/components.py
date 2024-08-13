@@ -58,7 +58,7 @@ class PdfImage(Flowable):
             elif a in ('RIGHT', TA_RIGHT):
                 x += _sW
             elif a not in ('LEFT', TA_LEFT):
-                raise ValueError("Bad hAlign value " + str(a))
+                raise ValueError(f'Bad hAlign value {str(a)}')
 
         xobj = self.xobj
         xobj_name = makerl(canv._doc, xobj)

@@ -27,7 +27,7 @@ class Trade(object):
         return [t1, t2]
 
     def __repr__(self):
-        return '<%s(%s, qty=%s, px=%s, ts=%s)>' % (self.__class__.__name__, self.tid, self.qty, self.px, self.ts)
+        return f'<{self.__class__.__name__}({self.tid}, qty={self.qty}, px={self.px}, ts={self.ts})>'
 
 
 class TradeBlotter(object):
@@ -78,15 +78,14 @@ class TradeBlotter(object):
         if not self.is_open():
             raise Exception('decrease position failed: no position currently open')
         if np.sign(self._live_qty) != -np.sign(qty):
-            msg = 'decrease position failed: trade quantity {0} is same sign as live quantity {1}'
-            raise Exception(msg.format(qty, self._live_qty))
+            msg = f'decrease position failed: trade quantity {qty} is same sign as live quantity {self._live_qty}'
+            raise Exception(msg)
         self._order(qty, px, fees, **kwargs)
 
     def increase(self, qty, px, fees=0, **kwargs):
         if not self.is_open():
             raise Exception('increase position failed: no position currently open')
         if np.sign(self._live_qty) != np.sign(qty):
-            msg = 'increase position failed: trade quantity {0} is different sign as live quantity {1}'
-            raise Exception(msg.format(qty, self._live_qty))
+            msg = f'increase position failed: trade quantity {qty} is different sign as live quantity {self._live_qty}'
+            raise Exception(msg)
         self._order(qty, px, fees, **kwargs)
-

@@ -54,7 +54,7 @@ def ma(arg, n, matype='sma'):
     elif matype == 'wma':
         return wilderma(arg, n)
     else:
-        raise ValueError('unknown moving average type %s' % matype)
+        raise ValueError(f'unknown moving average type {matype}')
 
 
 def _ensure_sorf(arg):
@@ -65,7 +65,7 @@ def _ensure_sorf(arg):
 def _ensure_col(arg, **kwds):
     for k, v in kwds.items():
         if v not in arg:
-            raise Exception('failed to find column for argument %s=%s' % (k, v))
+            raise Exception(f'failed to find column for argument {k}={v}')
 
 
 def true_range(arg, high_col='high', low_col='low', close_col='close', skipna=0):
@@ -222,7 +222,7 @@ def cross_signal(s1, s2, continuous=0):
             lower, upper = pd.Series(l, index=other.index), pd.Series(u, index=other.index)
             return lower, upper
         else:
-            raise Exception('unable to handle type %s' % type(src))
+            raise Exception(f'unable to handle type {type(src)}')
 
     lower1, upper1 = _convert(s1, s2)
     lower2, upper2 = _convert(s2, s1)
@@ -315,7 +315,7 @@ class Signal(object):
             if sig != lsig:
                 px = pxs.get(ts, None)
                 if px is None:
-                    raise Exception('insufficient price data: no data found at %s' % ts)
+                    raise Exception(f'insufficient price data: no data found at {ts}')
                 if lsig != 0:  # close open trd
                     blotter.close(px=px)
 
@@ -342,7 +342,7 @@ class Signal(object):
                     # close open trd with today's closing price
                     px = close_pxs.get(ts, None)
                     if px is None:
-                        raise Exception('insufficient close price data: no data found at %s' % ts)
+                        raise Exception(f'insufficient close price data: no data found at {ts}')
                     blotter.close(px)
 
                 if sig != 0:

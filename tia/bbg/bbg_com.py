@@ -90,7 +90,7 @@ class XmlHelper(object):
         elif dtype == 15:  # SEQUENCE
             return XmlHelper.get_sequence_value(ele)
         else:
-            raise NotImplementedError('Unexpected data type %s. Check documentation' % dtype)
+            raise NotImplementedError(f'Unexpected data type {dtype}. Check documentation')
 
     @staticmethod
     def get_child_value(parent, name, allow_missing=0):
@@ -99,7 +99,7 @@ class XmlHelper(object):
             if allow_missing:
                 return np.nan
             else:
-                raise Exception('failed to find child element %s in parent' % name)
+                raise Exception(f'failed to find child element {name} in parent')
         else:
             return XmlHelper.as_value(parent.GetElement(name))
 
@@ -167,7 +167,7 @@ class XmlHelper(object):
 
 
 def debug_event(evt):
-    print('unhandled event: %s' % evt.EventType)
+    print(f'unhandled event: {evt.EventType}')
     if evt.EventType in [constants.RESPONSE, constants.PARTIAL_RESPONSE]:
         print('messages:')
         for msg in XmlHelper.message_iter(evt):
@@ -232,11 +232,11 @@ class Request(object):
 
     def raise_exception(self):
         if not self.ignore_security_error and len(self.security_errors) > 0:
-            msgs = ['(%s, %s, %s)' % (s.security, s.category, s.message) for s in self.security_errors]
-            raise Exception('SecurityError: %s' % ','.join(msgs))
+            msgs = [f'({s.security}, {s.category}, {s.message})' for s in self.security_errors]
+            raise Exception(f'SecurityError: {",".join(msgs)}')
         if not self.ignore_field_error and len(self.field_errors) > 0:
-            msgs = ['(%s, %s, %s, %s)' % (s.security, s.field, s.category, s.message) for s in self.field_errors]
-            raise Exception('FieldError: %s' % ','.join(msgs))
+            msgs = [f'({s.security}, {s.field}, {s.category}, {s.message})' for s in self.field_errors]
+            raise Exception(f'FieldError: {",".join(msgs)}')
         raise Exception('Programmer Error: No exception to raise')
 
     def get_bbg_request(self, svc, session):
@@ -284,7 +284,7 @@ class ReferenceDataRequest(Request):
         fmtargs = dict(clz=self.__class__.__name__,
                        symbols=','.join(self.symbols),
                        fields=','.join(self.fields),
-                       overrides=','.join(['%s=%s' % (k, v) for k, v in self.overrides.items()]),
+                       overrides=','.join([f'{k}={v}' for k, v in self.overrides.items()]),
                        rt=self.response_type,
                        ise=self.ignore_security_error and True or False,
                        ife=self.ignore_field_error and True or False,
@@ -527,7 +527,7 @@ class Terminal(object):
         try:
             svcname = request.get_bbg_service_name()
             if not session.OpenService(svcname):
-                raise Exception('failed to open service %s' % svcname)
+                raise Exception(f'failed to open service {svcname}')
 
             svc = session.GetService(svcname)
             asbbg = request.get_bbg_request(svc, session)

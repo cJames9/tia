@@ -97,7 +97,7 @@ class ShortTermReport(object):
     def title_bar(self, title):
         # Build a title bar for top of page
         w, t, c = '100%', 2, HexColor('#404040')
-        title = '<b>{0}</b>'.format(title)
+        title = f'<b>{title}</b>'
         return [HRFlowable(width=w, thickness=t, color=c, spaceAfter=2, vAlign='MIDDLE', lineCap='square'),
                 self.pdf.new_paragraph(title, 'TitleBar'),
                 HRFlowable(width=w, thickness=t, color=c, spaceBefore=2, vAlign='MIDDLE', lineCap='square')]
@@ -107,8 +107,7 @@ class ShortTermReport(object):
         self.pdf = pdf = rlab.PdfBuilder(self.path, coverpage=cp)
         # Setup stylesheet
         tb = ParagraphStyle('TitleBar', parent=pdf.stylesheet['Normal'], fontName='Helvetica-Bold', fontSize=10,
-
-                    leading=10, alignment=TA_CENTER)
+                            leading=10, alignment=TA_CENTER)
         'TitleBar' not in pdf.stylesheet and pdf.stylesheet.add(tb)
         # define templates
         self.define_portfolio_summary_template()
@@ -225,10 +224,9 @@ class ShortTermReport(object):
             'F6': toimg(figures['mrets_box']),
             'F7': stable,
             'F8': dtable,
-            'HDR': self.title_bar('{0} - {1} - portfolio summary'.format(result.sid, result.desc))
+            'HDR': self.title_bar(f'{result.sid} - {result.desc} - portfolio summary')
         }
         pdf.build_page('portfolio', itms)
-
 
     def add_position_page(self, result):
         def dofmt(t):
@@ -289,7 +287,6 @@ class ShortTermReport(object):
             'F2': toimg(figures['pos_pair']),
             'F5': stable,
             'F6': dtable,
-            'HDR': self.title_bar('{0} - {1} - position summary'.format(result.sid, result.desc))
+            'HDR': self.title_bar(f'{result.sid} - {result.desc} - position summary')
         }
         pdf.build_page('positions', itms)
-

@@ -39,9 +39,9 @@ class DateTimeFormat(object):
                 if self.coerce:
                     value = pd.to_datetime(value)
                     if not hasattr(value, 'strftime'):
-                        raise ValueError('failed to coerce %s type=%s to datetime' % (value, type(value)))
+                        raise ValueError(f'failed to coerce {value} type={type(value)} to datetime')
                 else:  #
-                    raise ValueError('%s type(%s) has not method strftime' % (value, type(value)))
+                    raise ValueError(f'{value} type={type(value)} has not method strftime')
             return (value == value and value.strftime(self.fmtstr)) or str(value)
 
 
@@ -103,7 +103,7 @@ class NumberFormat(object):
                 return self_with_args(pd.Series(value)).values
         elif not issubclass(type(value), (float, int)):
             if not self.coerce:
-                raise ValueError('NumberFormat expected number type not %s' % (type(value)))
+                raise ValueError(f'NumberFormat expected number type not {type(value)}')
             else:
                 if self.coerce and not issubclass(type(value), (float, int)):
                     try:
@@ -131,7 +131,7 @@ class NumberFormat(object):
             isneg = txt[0] == '-'
             lp, rp = isneg and ('(', ')') or ('', '')
             txt = isneg and txt[1:] or txt
-            return '{prefix}{lp}{txt}{suffix}{rp}'.format(prefix=self.prefix, txt=txt, suffix=self.suffix, lp=lp, rp=rp)
+            return f'{self.prefix}{lp}{txt}{self.suffix}{rp}'
         else:
             return '{prefix}{txt}{suffix}'.format(prefix=self.prefix, txt=txt, suffix=self.suffix)
 

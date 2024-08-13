@@ -63,7 +63,7 @@ def sample1():
     for hon, ion in list(itertools.product([True, False], repeat=2)):
         offon = lambda v: v and 'On' or 'Off'
         for cstyle in [None, ConditionalRedBlack]:
-            hdr = 'Index=%s Header=%s Color=%s' % (offon(ion), offon(hon), offon(cstyle is not None))
+            hdr = f'Index={offon(ion)} Header={offon(hon)} Color={offon(cstyle is not None)}'
             data = {
                 'HEADER': Paragraph(hdr, getSampleStyleSheet()['Normal']),
                 'TBL': make_builder(hon, ion, cstyle).build(),
@@ -102,7 +102,7 @@ def sample_long_table():
 def sample_wide_table():
     # Should shrink to fit the page
     pdf_path = os.path.join(tempfile.gettempdir(), 'pdf_test_wide_table.pdf')
-    cols = ['C%s' % i for i in range(36)]
+    cols = [f'C{i}' for i in range(36)]
     df = pd.DataFrame(np.random.randn(20, len(cols)), columns=cols)
     pdf = PdfBuilder(pdf_path)
     gt = GridTemplate('T1', 100, 100)
@@ -121,7 +121,7 @@ def sample_wide_table():
 def sample_dyn_col_row_table():
     # Should shrink to fit the page
     pdf_path = os.path.join(tempfile.gettempdir(), 'pdf_test_dyn_col_row_table.pdf')
-    cols = ['C%s' % i for i in range(4)]
+    cols = [f'C{i}' for i in range(4)]
     df = pd.DataFrame(np.random.randn(4, len(cols)), columns=cols)
     pdf = PdfBuilder(pdf_path)
     gt = GridTemplate('T1', 100, 100)
@@ -145,7 +145,7 @@ def sample_multi_page():
     # TODO - make this right
     #
     pdf_path = os.path.join(tempfile.gettempdir(), 'pdf_test_multi_page.pdf')
-    cols = ['C%s' % i for i in range(4)]
+    cols = [f'C{i}' for i in range(4)]
     df = pd.DataFrame(np.random.randn(400, len(cols)), columns=cols)
     pdf = PdfBuilder(pdf_path)
     gt = GridTemplate('T1', 100, 100)

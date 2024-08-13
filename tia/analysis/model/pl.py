@@ -76,10 +76,9 @@ class OpenAverageProfitAndLossCalculator(object):
             missing_pxs = pl[MC.CLOSE].isnull()
             missing = pl[TC.DT][has_position & missing_pxs]
             if len(missing) > 0:
-                msg = 'insufficient price data: {0} prices missing for dates {1}'
                 mdates = ','.join([_.strftime('%Y-%m-%d') for _ in set(missing[:5])])
                 mdates += (len(missing) > 5 and '...' or '')
-                raise Exception(msg.format(len(missing), mdates))
+                raise Exception(f'insufficient price data: {len(missing)} prices missing for dates {mdates}')
 
             # Now there is a row for every timestamp. Now compute the pl and fill in where missing data should be
             cols = [TC.DT, TC.POS, TC.PID, TC.TID, TC.INTENT, TC.ACTION, TC.FEES, TC.QTY, TC.PX, TC.PREMIUM,
@@ -353,11 +352,11 @@ class ProfitAndLossDetails(object):
             mdt, mdd = self.maxdd_dt, self.maxdd
             bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.25)
             try:
-                dtstr = '{0}'.format(mdt.to_period())
+                dtstr = f'{mdt.to_period()}'
             except:
                 # assume daily
-                dtstr = '{0}'.format(hasattr(mdt, 'date') and mdt.date() or mdt)
-            ax.text(mdt, dd[mdt], "{1} \n {0}".format(fmt(mdd), dtstr).strip(), ha="center", va="top", size=8,
+                dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
+            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha="center", va="top", size=8,
                     bbox=bbox_props)
 
         if title is True:
@@ -365,7 +364,7 @@ class ProfitAndLossDetails(object):
             total = df(ltd.iloc[-1])
             vol = df(self.std)
             mdd = df(self.maxdd)
-            title = 'pnl %s     vol %s     maxdd %s' % (total, vol, mdd)
+            title = f'pnl {total}     vol {vol}     maxdd {mdd}'
 
         title and ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
         return ax
@@ -467,24 +466,24 @@ class ProfitAndLoss(object):
         if first_n_yrs:
             first_n_yrs = first_n_yrs if not np.isscalar(first_n_yrs) else [first_n_yrs]
             for first in first_n_yrs:
-                after = '12/31/%s' % (self.dly.index[0].year + first)
+                after = f'12/31/{self.dly.index[0].year + first}'
                 firstN = self.truncate(after=after)
-                results['first {0}yrs'.format(first)] = summary_fct(firstN)
+                results[f'first {first}yrs'] = summary_fct(firstN)
 
         # Ranges
         if ranges:
             for range in ranges:
                 yr_start, yr_end = range
-                rng_rets = self.truncate('1/1/%s' % yr_start, '12/31/%s' % yr_end)
-                results['{0}-{1}'.format(yr_start, yr_end)] = summary_fct(rng_rets)
+                rng_rets = self.truncate(f'1/1/{yr_start}', f'12/31/{yr_end}')
+                results[f'{yr_start}-{yr_end}'] = summary_fct(rng_rets)
 
         # Prior n years
         if prior_n_yrs:
             prior_n_yrs = prior_n_yrs if not np.isscalar(prior_n_yrs) else [prior_n_yrs]
             for prior in prior_n_yrs:
-                before = '1/1/%s' % (self.dly.index[-1].year - prior)
+                before = f'1/1/{self.dly.index[-1].year - prior}'
                 priorN = self.truncate(before)
-                results['past {0}yrs'.format(prior)] = summary_fct(priorN)
+                results[f'past {prior}yrs'] = summary_fct(priorN)
 
         # LTD
         if ltd:
@@ -500,7 +499,7 @@ class TxnProfitAndLoss(ProfitAndLoss):
         self.txns = txns
         self._txn_details = txnpl_details
         # Don't set the attribute, wany lazy property to be called
-        #ProfitAndLoss.__init__(self, None)
+        # ProfitAndLoss.__init__(self, None)
 
     @property
     def txn_details(self):
@@ -524,4 +523,3 @@ class TxnProfitAndLoss(ProfitAndLoss):
 
     def get_pid_mask(self, pid):
         return self.txn_details.get_pid_mask(pid)
-

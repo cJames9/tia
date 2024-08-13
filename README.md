@@ -74,7 +74,7 @@ Utils
 
 
 ## Dependencies
-- Python 3
+- Python 3.6 or newer
 
 ### Mandatory
 - [numpy](http://www.numpy.org/)

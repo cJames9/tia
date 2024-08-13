@@ -33,10 +33,10 @@ def get_logger(name, level=None):
 
 
 def class_logger(cls, level=None):
-    lname = cls.__module__ + "." + cls.__name__
+    lname = f'{cls.__module__}.{cls.__name__}'
     return get_logger(lname, level)
 
 
 def instance_logger(name, instance, level=None):
-    lname = "%s.%s.%s" % (instance.__class__.__module__, instance.__class__.__name__, name)
+    lname = f'{instance.__class__.__module__}.{instance.__class__.__name__}.{name}'
     return get_logger(lname, level)
