@@ -134,7 +134,7 @@ class Positions(object):
     def _repr_html_(self):
         return self.frame._repr_html_()
 
-    def plot_rets(self, ls=1, ax=None):
+    def plot_rets(self, ls=True, ax=None):
         """Plot each of the position returns
 
         :param ls: True, if positions should be broken into long/short
@@ -167,7 +167,7 @@ class Positions(object):
         ax.legend(loc='upper left')
         return ax
 
-    def plot_ret_range(self, ax=None, ls=0, dur=0):
+    def plot_ret_range(self, ax=None, ls=False, dur=0):
         """Plot the return range for each position
 
         :param ax: Axes
@@ -309,5 +309,5 @@ class PositionsStats(object):
     def _repr_html_(self):
         from tia.util.fmt import new_dynamic_formatter
 
-        fmt = new_dynamic_formatter(method='row', precision=2, pcts=1, trunc_dot_zeros=1, parens=1)
+        fmt = new_dynamic_formatter(method='row', precision=2, pcts=True, trunc_dot_zeros=True, parens=True)
         return fmt(self.series.to_frame())._repr_html_()

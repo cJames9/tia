@@ -7,8 +7,9 @@ from tia.util.mplot import AxesFormat
 from tia.util.fmt import new_float_formatter
 
 
-def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None, ax=None, append=0, label=None, **plot_args):
-    """ Show the cumulative return of specified rets and max drawdowns if selected."""
+def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=False, figsize=None, ax=None, append=False, label=None,
+                          **plot_args):
+    """Show the cumulative return of specified rets and max drawdowns if selected."""
     crets = (1. + returns_cumulative(rets, expanding=1))
     if isinstance(crets, pd.DataFrame):
         tmp = crets.copy()
@@ -49,7 +50,7 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
             crets = crets.append(toadd)
 
     ax = crets.plot(figsize=figsize, title=title, ax=ax, label=label, **plot_args)
-    AxesFormat().Y.apply_format(new_float_formatter()).X.label("").apply(ax)
+    AxesFormat().Y.apply_format(new_float_formatter()).X.label('').apply(ax)
     # ax.tick_params(labelsize=14)
     if show_maxdd:
         # find the max drawdown available by using original rets
@@ -60,7 +61,7 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
 
         for c, col in iterator:
             dd, dt = max_drawdown(col, inc_date=1)
-            lbl = c and c + ' maxdd' or 'maxdd'
+            # lbl = c and c + ' maxdd' or 'maxdd'
             # get cret to place annotation correctly
             if isinstance(crets, pd.DataFrame):
                 amt = crets.loc[dt, c]
@@ -71,7 +72,9 @@ def plot_return_on_dollar(rets, title='Return on $1', show_maxdd=0, figsize=None
             # sub = lambda c: c and len(c) > 2 and c[:2] or c
             try:
                 dtstr = f'{dt.to_period()}'
-            except:
+            except Exception as e:
+                import warnings
+                warnings.warn(f'Undocumented exception on tia/analysis/plots: {e}', category=ResourceWarning)
                 dtstr = f'{dt}'
 
             ax.text(dt, amt, f'mdd {dtstr}'.strip(), ha="center",

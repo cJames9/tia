@@ -147,7 +147,7 @@ class FigureHelper(object):
     def __getitem__(self, item):
         return self.fnmap[item]
 
-    def savefig(self, fn=None, dpi=None, clear=1, ext=None, key=None):
+    def savefig(self, fn=None, dpi=None, clear=True, ext=None, key=None):
         ext = ext or self.ext
         ext = ext.startswith('.') and ext or '.' + ext
         fn = fn or uuid.uuid1()
@@ -218,9 +218,9 @@ class GridHelper(object):
         self.fig = fig
 
     def __iter__(self):
-        import itertools
+        from itertools import chain
 
-        flat = list(itertools.chain.from_iterable(self.axarr))
+        flat = list(chain.from_iterable(self.axarr))
         return iter(flat)
 
     def get_axes(self, idx):

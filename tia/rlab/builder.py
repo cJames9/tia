@@ -1,3 +1,5 @@
+__all__ = ['CoverPage', 'GridFrame', 'GridTemplate', 'PdfBuilder']
+
 from reportlab.platypus import BaseDocTemplate, Paragraph, Frame, PageBreak, FrameBreak, NextPageTemplate, \
     PageTemplate
 from reportlab.lib.pagesizes import letter, landscape
@@ -8,8 +10,6 @@ from reportlab.platypus.flowables import Flowable, HRFlowable
 from tia.rlab.table import TableFormatter
 
 import numpy as np
-
-__all__ = ['CoverPage', 'GridFrame', 'GridTemplate', 'PdfBuilder']
 
 
 class CoverPage(object):
@@ -26,7 +26,7 @@ class CoverPage(object):
         # The cover page just has some drawing on the canvas.
         c.saveState()
         isletter = (w, h) == letter
-        c.setFont(self.font, isletter and 16 or 20)
+        c.setFont(self.font, 16 if isletter else 20)
         imgw, imgh = 2.83 * units.inch, .7 * units.inch
 
         c.drawString(25, h / 2 - 6, self.title)
@@ -37,7 +37,7 @@ class CoverPage(object):
         c.setFillColorRGB(0, 0, 0)
         c.rect(0, h / 2 + .5 * imgh + 5, w, 1, fill=1)
         c.rect(0, h / 2 - .5 * imgh - 5, w, 1, fill=1)
-        c.setFontSize(isletter and 12 or 16)
+        c.setFontSize(12 if isletter else 16)
         c.drawString(25, h / 2 - .5 * imgh - 50, self.subtitle)
         if self.subtitle2:
             c.drawString(25, h / 2 - .5 * imgh - 70, self.subtitle2)
@@ -49,7 +49,7 @@ def _to_points(ix, n):
         p0, p1, _ = ix.indices(n)
         return p0, p1
     elif np.isscalar(ix):
-        ix = (ix < 0 and ix + n) or ix
+        ix = ix + n if ix < 0 else ix
         if ix < 0 or ix >= n:
             raise IndexError(f'index {ix} out of range (0, {n})')
         return ix, ix + 1
@@ -112,7 +112,7 @@ class GridTemplate(object):
                 frame_args = {}
             else:
                 gf = value[0]
-                frame_args = len(value) > 0 and value[1] or {}
+                frame_args = value[1] if len(value) > 0 else {}
             self.define_frame(alias, gf, **frame_args)
 
     def as_page_template(self, builder):
@@ -143,14 +143,7 @@ def raise_template_not_found(template_id):
 
 
 class PdfBuilder(object):
-    @classmethod
-    def build_doc(cls, path, pagesize=None, showBoundary=1, allowSplitting=1, **dargs):
-        if pagesize is None:
-            pagesize = landscape(letter)
-        return BaseDocTemplate(path, pagesize=pagesize, showBoundary=showBoundary, allowSplitting=allowSplitting,
-                               **dargs)
-
-    def __init__(self, doc_or_path, coverpage=None, pagesize=None, stylesheet=None, showBoundary=0):
+    def __init__(self, doc_or_path, coverpage=None, pagesize=None, stylesheet=None, showBoundary=False):
         self.path = None
         if isinstance(doc_or_path, str):
             self.path = doc_or_path
@@ -166,10 +159,17 @@ class PdfBuilder(object):
         self.stylesheet = stylesheet or getSampleStyleSheet()
         if inc_coverpage:
             # Allow user to override the cover page template
-            if not self.get_page_template('cover', err=0):
+            if not self.get_page_template('cover', err=False):
                 f = Frame(0, 0, self.width, self.height)
                 pt = PageTemplate(id='cover', frames=[f], onPage=coverpage.onPage)
                 self.add_page_template(pt)
+
+    @classmethod
+    def build_doc(cls, path, pagesize=None, showBoundary=True, allowSplitting=True, **dargs):
+        if pagesize is None:
+            pagesize = landscape(letter)
+        return BaseDocTemplate(path, pagesize=pagesize, showBoundary=showBoundary, allowSplitting=allowSplitting,
+                               **dargs)
 
     def new_title_bar(self, title, color=None):
         """Return an array of Pdf Objects which constitute a Header"""
@@ -185,7 +185,6 @@ class PdfBuilder(object):
                 HRFlowable(width=w, thickness=t, color=c, spaceBefore=2, vAlign='MIDDLE', lineCap='square')]
 
     def new_paragraph(self, txt, style='Normal'):
-        s = self.stylesheet[style]
         return Paragraph(txt, style=self.stylesheet[style])
 
     para = new_paragraph
@@ -197,7 +196,7 @@ class PdfBuilder(object):
         self.doc.addPageTemplates(pt)
         return self
 
-    def get_page_template(self, template_id, default=None, err=1):
+    def get_page_template(self, template_id, default=None, err=True):
         for pt in self.doc.pageTemplates:
             if pt.id == template_id:
                 return pt
@@ -215,7 +214,7 @@ class PdfBuilder(object):
             raise_template_not_found(template_id)
         elif (not self.inc_cover and ids[0] != template_id) or (self.inc_cover and ids[1] != template_id):
             tmp = self.doc.pageTemplates.pop(ids.index(template_id))
-            self.doc.pageTemplates.insert(self.inc_cover and 1 or 0, tmp)
+            self.doc.pageTemplates.insert(1 if self.inc_cover else 0, tmp)
 
     def build_page(self, template_id, flowable_map):
         """Build a pdf page by looking up the specified template and then mapping the flowable_map items to the
@@ -227,7 +226,8 @@ class PdfBuilder(object):
         if self.active_template_id is None:
             self.make_template_first(template_id)
             self.story.append(NextPageTemplate(template_id))
-            self.inc_cover and self.story.append(PageBreak())
+            if self.inc_cover:
+                self.story.append(PageBreak())
             self.active_template_id = template_id
         elif self.active_template_id == template_id:
             # TODO - understand why this is necessary to not get a blank page between pages
@@ -255,11 +255,11 @@ class PdfBuilder(object):
         """Define a simple grid template. This will define nrows*ncols frames, which will be indexed starting with '0,0'
             and using numpy style indexing. So '0,1' is row 0 , col 1"""
         template = GridTemplate(template_id, nrows, ncols)
-        [template.define_frame(f'{i},{j}', template[i, j]) for i in range(nrows) for j in range(ncols)]
+        [template.define_frame(f'{row},{col}', template[row, col]) for row in range(nrows) for col in range(ncols)]
         template.register(self)
         return self
 
-    def table_formatter(self, dataframe, inc_header=1, inc_index=1):
+    def table_formatter(self, dataframe, inc_header=True, inc_index=True):
         """Return a table formatter for the dataframe. Saves the user the need to import this class"""
         return TableFormatter(dataframe, inc_header=inc_header, inc_index=inc_index)
 
@@ -268,4 +268,3 @@ class PdfBuilder(object):
             del self.story[-1]
 
         self.doc.build(self.story)
-        # self.doc.multiBuild(self.story)

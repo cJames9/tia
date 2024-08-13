@@ -38,7 +38,7 @@ class PortfolioPricer(CostCalculator, EodMarketData):
         return pxs
 
     def get_mkt_val(self, pxs=None):
-        """  return the market value series for the specified Series of pxs """
+        """return the market value series for the specified Series of pxs"""
         pxs = self._closing_pxs if pxs is None else pxs
         return pxs * self.multiplier
 
@@ -133,9 +133,9 @@ class SingleAssetPortfolio(object):
 
         eod = self.pricer.get_eod_frame().close
 
-        start_dt = start_dt and pd.to_datetime(start_dt) or eod.index[0]
+        start_dt = pd.to_datetime(start_dt) if start_dt else eod.index[0]
         start_px = start_px or eod.asof(start_dt)
-        end_dt = end_dt and pd.to_datetime(end_dt) or eod.index[-1]
+        end_dt = pd.to_datetime(end_dt) if end_dt else eod.index[-1]
         end_px = end_px or eod.asof(end_dt)
 
         pricer = self.pricer.trunace(start_dt, end_dt)
@@ -279,7 +279,7 @@ class PortfolioSummary(object):
         self.iter_fcts.append(siter)
         return self
 
-    def include_win_loss(self, total=1):
+    def include_win_loss(self, total=True):
         def _split_port(port):
             if total:
                 yield self.total_key, port
@@ -289,7 +289,7 @@ class PortfolioSummary(object):
         self.add_iter_fct(_split_port)
         return self
 
-    def include_long_short(self, total=1):
+    def include_long_short(self, total=True):
         def _split_port(port):
             if total:
                 yield self.total_key, port

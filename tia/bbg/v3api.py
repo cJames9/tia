@@ -22,7 +22,8 @@ logger = log.get_logger(__name__)
 class XmlHelper(object):
     @staticmethod
     def security_iter(nodearr):
-        """ provide a security data iterator by returning a tuple of (Element, SecurityError) which are mutually exclusive """
+        """provide a security data iterator by returning a tuple of (Element, SecurityError) which are mutually
+        exclusive"""
         assert nodearr.name() == 'securityData' and nodearr.isArray()
         for i in range(nodearr.numValues()):
             node = nodearr.getValue(i)
@@ -86,7 +87,7 @@ class XmlHelper(object):
             else:
                 v = ele.getValue()
                 now = datetime.now()
-                return datetime(year=now.year, month=now.month, day=now.day, hour=v.hour, minute=v.minute, second=v.second).time() if v else np.nan
+                return now.replace(hour=v.hour, minute=v.minute, second=v.second).time() if v else np.nan
         elif dtype == 13:  # Datetime
             if ele.isNull():
                 return pd.NaT
@@ -96,15 +97,15 @@ class XmlHelper(object):
         elif dtype == 14:  # Enumeration
             return str(ele.getValue())
         elif dtype == 16:  # Choice
-            raise NotImplementedError('CHOICE data type needs implemented')
+            raise NotImplementedError('CHOICE data type needs implementation')
         elif dtype == 15:  # SEQUENCE
             return XmlHelper.get_sequence_value(ele)
         else:
             raise NotImplementedError(f'Unexpected data type {dtype}. Check documentation')
 
     @staticmethod
-    def get_child_value(parent, name, allow_missing=0):
-        """ return the value of the child element with name in the parent Element """
+    def get_child_value(parent, name, allow_missing=False):
+        """returns the value of the child element with name in the parent Element"""
         if not parent.hasElement(name):
             if allow_missing:
                 return np.nan
@@ -115,7 +116,7 @@ class XmlHelper(object):
 
     @staticmethod
     def get_child_values(parent, names):
-        """return a list of values for the specified child fields. If field not in Element then replace with nan."""
+        """returns a list of values for the specified child fields. If field not in Element then replace with nan."""
         vals = []
         for name in names:
             if parent.hasElement(name):
@@ -126,7 +127,7 @@ class XmlHelper(object):
 
     @staticmethod
     def as_security_error(node, secid):
-        """convert the securityError element to a SecurityError"""
+        """converts the securityError element to a SecurityError"""
         assert node.name() == 'securityError'
         src = XmlHelper.get_child_value(node, 'source')
         code = XmlHelper.get_child_value(node, 'code')
@@ -137,7 +138,7 @@ class XmlHelper(object):
 
     @staticmethod
     def as_field_error(node, secid):
-        """convert a fieldExceptions element to a FieldError or FieldError array"""
+        """converts a fieldExceptions element to a FieldError or FieldError array"""
         assert node.name() == 'fieldExceptions'
         if node.isArray():
             return [XmlHelper.as_field_error(node.getValue(_), secid) for _ in range(node.numValues())]
@@ -185,7 +186,7 @@ def debug_event(evt):
 
 
 class Request(object):
-    def __init__(self, svcname, ignore_security_error=0, ignore_field_error=0):
+    def __init__(self, svcname, ignore_security_error=False, ignore_field_error=False):
         self.field_errors = []
         self.security_errors = []
         self.ignore_security_error = ignore_security_error
@@ -223,11 +224,12 @@ class Request(object):
 
     @staticmethod
     def apply_overrides(request, overrides):
+        """add the given overrides to bloomberg request"""
         if overrides:
-            for k, v in overrides.items():
+            for key, value in overrides.items():
                 o = request.getElement('overrides').appendElement()
-                o.setElement('fieldId', k)
-                o.setElement('value', v)
+                o.setElement('fieldId', key)
+                o.setElement('value', value)
 
     def set_flag(self, request, val, fld):
         """If the specified val is not None, then set the specified field to its boolean value"""
@@ -238,24 +240,6 @@ class Request(object):
     def set_response(self, response):
         """Set the response to handle and store the results """
         self.response = response
-
-
-class HistoricalDataResponse(object):
-    def __init__(self, request):
-        self.request = request
-        self.response_map = {}
-
-    def on_security_complete(self, sid, frame):
-        self.response_map[sid] = frame
-
-    def as_map(self):
-        return self.response_map
-
-    def as_frame(self):
-        """ :return: Multi-Index DataFrame """
-        sids, frames = list(self.response_map.keys()), list(self.response_map.values())
-        frame = pd.concat(frames, keys=sids, axis=1)
-        return frame
 
 
 class HistoricalDataRequest(Request):
@@ -282,8 +266,8 @@ class HistoricalDataRequest(Request):
     calendar_code_override: 2 letter county iso code
     """
 
-    def __init__(self, sids, fields, start=None, end=None, period=None, ignore_security_error=0,
-                 ignore_field_error=0, period_adjustment=None, currency=None, override_option=None,
+    def __init__(self, sids, fields, start=None, end=None, period=None, ignore_security_error=False,
+                 ignore_field_error=False, period_adjustment=None, currency=None, override_option=None,
                  pricing_option=None, non_trading_day_fill_option=None, non_trading_day_fill_method=None,
                  max_data_points=None, adjustment_normal=None, adjustment_abnormal=None, adjustment_split=None,
                  adjustment_follow_DPDF=None, calendar_code_override=None, **overrides):
@@ -294,8 +278,8 @@ class HistoricalDataRequest(Request):
         assert period in ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'SEMI_ANNUALLY', 'YEARLY')
         self.is_single_sid = is_single_sid = isinstance(sids, str)
         self.is_single_field = is_single_field = isinstance(fields, str)
-        self.sids = is_single_sid and [sids] or list(sids)
-        self.fields = is_single_field and [fields] or list(fields)
+        self.sids = [sids] if is_single_sid else list(sids)
+        self.fields = [fields] if is_single_field else list(fields)
         self.end = end = pd.to_datetime(end) if end else pd.Timestamp.now()
         self.start = pd.to_datetime(start) if start else end + relativedelta(years=-1)
         self.period = period
@@ -320,9 +304,11 @@ class HistoricalDataRequest(Request):
                        start=self.start.strftime('%Y-%m-%d'),
                        end=self.end.strftime('%Y-%m-%d'),
                        period=self.period,
+                       overrides=','.join([f'{key}={value}' for key, value in self.overrides.items()]),
                        )
-        # TODO: add self.overrides if defined
-        return '<{clz}([{symbols}], [{fields}], start={start}, end={end}, period={period}'.format(**fmtargs)
+        msg = '<{clz}([{symbols}], [{fields}], start={start}, end={end}, period={period}, overrides={overrides})>' \
+            .format(**fmtargs)
+        return msg
 
     def new_response(self):
         self.response = HistoricalDataResponse(self)
@@ -335,14 +321,22 @@ class HistoricalDataRequest(Request):
         request.set('startDate', self.start.strftime('%Y%m%d'))
         request.set('endDate', self.end.strftime('%Y%m%d'))
         request.set('periodicitySelection', self.period)
-        self.period_adjustment and request.set('periodicityAdjustment', self.period_adjustment)
-        self.currency and request.set('currency', self.currency)
-        self.override_option and request.set('overrideOption', self.override_option)
-        self.pricing_option and request.set('pricingOption', self.pricing_option)
-        self.non_trading_day_fill_option and request.set('nonTradingDayFillOption', self.non_trading_day_fill_option)
-        self.non_trading_day_fill_method and request.set('nonTradingDayFillMethod', self.non_trading_day_fill_method)
-        self.max_data_points and request.set('maxDataPoints', self.max_data_points)
-        self.calendar_code_override and request.set('calendarCodeOverride', self.calendar_code_override)
+        if self.period_adjustment:
+            request.set('periodicityAdjustment', self.period_adjustment)
+        if self.currency:
+            request.set('currency', self.currency)
+        if self.override_option:
+            request.set('overrideOption', self.override_option)
+        if self.pricing_option:
+            request.set('pricingOption', self.pricing_option)
+        if self.non_trading_day_fill_option:
+            request.set('nonTradingDayFillOption', self.non_trading_day_fill_option)
+        if self.non_trading_day_fill_method:
+            request.set('nonTradingDayFillMethod', self.non_trading_day_fill_method)
+        if self.max_data_points:
+            request.set('maxDataPoints', self.max_data_points)
+        if self.calendar_code_override:
+            request.set('calendarCodeOverride', self.calendar_code_override)
         self.set_flag(request, self.adjustment_normal, 'adjustmentNormal')
         self.set_flag(request, self.adjustment_abnormal, 'adjustmentAbnormal')
         self.set_flag(request, self.adjustment_split, 'adjustmentSplit')
@@ -359,7 +353,7 @@ class HistoricalDataRequest(Request):
         dmap = defaultdict(list)
         for i in range(farr.numValues()):
             pt = farr.getValue(i)
-            [dmap[f].append(XmlHelper.get_child_value(pt, f, allow_missing=1)) for f in ['date'] + self.fields]
+            [dmap[f].append(XmlHelper.get_child_value(pt, f, allow_missing=True)) for f in ['date'] + self.fields]
 
         if not dmap:
             frame = pd.DataFrame(columns=self.fields)
@@ -378,6 +372,80 @@ class HistoricalDataRequest(Request):
                 self.security_errors.append(XmlHelper.as_security_error(node.getElement('securityError'), sid))
             else:
                 self.on_security_data_node(node)
+
+
+class HistoricalDataResponse(object):
+    def __init__(self, request):
+        self.request = request
+        self.response_map = {}
+
+    def on_security_complete(self, sid, frame):
+        self.response_map[sid] = frame
+
+    def as_map(self):
+        return self.response_map
+
+    def as_frame(self):
+        """ :return: Multi-Index DataFrame """
+        sids, frames = list(self.response_map.keys()), list(self.response_map.values())
+        frame = pd.concat(frames, keys=sids, axis=1)
+        return frame
+
+
+class ReferenceDataRequest(Request):
+    def __init__(self, sids, fields, ignore_security_error=False, ignore_field_error=False, return_formatted_value=None,
+                 use_utc_time=None, **overrides):
+        """
+        response_type: (frame, map) how to return the results
+        """
+        Request.__init__(self, '//blp/refdata', ignore_security_error=ignore_security_error,
+                         ignore_field_error=ignore_field_error)
+        self.is_single_sid = is_single_sid = isinstance(sids, str)
+        self.is_single_field = is_single_field = isinstance(fields, str)
+        self.sids = [sids] if is_single_sid else sids
+        self.fields = [fields] if is_single_field else fields
+        self.return_formatted_value = return_formatted_value
+        self.use_utc_time = use_utc_time
+        self.overrides = overrides
+
+    def __repr__(self):
+        fmtargs = dict(clz=self.__class__.__name__,
+                       sids=','.join(self.sids),
+                       fields=','.join(self.fields),
+                       overrides=','.join([f'{key}={value}' for key, value in self.overrides.items()]),
+                       )
+        return '<{clz}([{sids}], [{fields}], overrides={overrides})>'.format(**fmtargs)
+
+    def new_response(self):
+        self.response = ReferenceDataResponse(self)
+
+    def get_bbg_request(self, svc, session):
+        # create the bloomberg request object
+        request = svc.createRequest('ReferenceDataRequest')
+        [request.append('securities', sec) for sec in self.sids]
+        [request.append('fields', fld) for fld in self.fields]
+        self.set_flag(request, self.return_formatted_value, 'returnFormattedValue')
+        self.set_flag(request, self.use_utc_time, 'useUTCTime')
+        Request.apply_overrides(request, self.overrides)
+        return request
+
+    def on_security_node(self, node):
+        sid = XmlHelper.get_child_value(node, 'security')
+        farr = node.getElement('fieldData')
+        fdata = XmlHelper.get_child_values(farr, self.fields)
+        assert len(fdata) == len(self.fields), 'field length must match data length'
+        self.response.on_security_data(sid, dict(list(zip(self.fields, fdata))))
+        ferrors = XmlHelper.get_field_errors(node)
+        if ferrors:
+            self.field_errors.extend(ferrors)
+
+    def on_event(self, evt, is_final):
+        for msg in XmlHelper.message_iter(evt):
+            for node, error in XmlHelper.security_iter(msg.getElement('securityData')):
+                if error:
+                    self.security_errors.append(error)
+                else:
+                    self.on_security_node(node)
 
 
 class ReferenceDataResponse(object):
@@ -400,70 +468,6 @@ class ReferenceDataResponse(object):
         return frame
 
 
-class ReferenceDataRequest(Request):
-    def __init__(self, sids, fields, ignore_security_error=0, ignore_field_error=0, return_formatted_value=None,
-                 use_utc_time=None, **overrides):
-        """
-        response_type: (frame, map) how to return the results
-        """
-        Request.__init__(self, '//blp/refdata', ignore_security_error=ignore_security_error,
-                         ignore_field_error=ignore_field_error)
-        self.is_single_sid = isinstance(sids, str)
-        self.is_single_field = isinstance(fields, str)
-        self.sids = isinstance(sids, str) and [sids] or sids
-        self.fields = isinstance(fields, str) and [fields] or fields
-        self.return_formatted_value = return_formatted_value
-        self.use_utc_time = use_utc_time
-        self.overrides = overrides
-
-    def __repr__(self):
-        fmtargs = dict(clz=self.__class__.__name__,
-                       sids=','.join(self.sids),
-                       fields=','.join(self.fields),
-                       overrides=','.join([f'{k}={v}' for k, v in self.overrides.items()]))
-        return '<{clz}([{sids}], [{fields}], overrides={overrides})'.format(**fmtargs)
-
-    def new_response(self):
-        self.response = ReferenceDataResponse(self)
-
-    def get_bbg_request(self, svc, session):
-        # create the bloomberg request object
-        request = svc.createRequest('ReferenceDataRequest')
-        [request.append('securities', sec) for sec in self.sids]
-        [request.append('fields', fld) for fld in self.fields]
-        self.set_flag(request, self.return_formatted_value, 'returnFormattedValue')
-        self.set_flag(request, self.use_utc_time, 'useUTCTime')
-        Request.apply_overrides(request, self.overrides)
-        return request
-
-    def on_security_node(self, node):
-        sid = XmlHelper.get_child_value(node, 'security')
-        farr = node.getElement('fieldData')
-        fdata = XmlHelper.get_child_values(farr, self.fields)
-        assert len(fdata) == len(self.fields), 'field length must match data length'
-        self.response.on_security_data(sid, dict(list(zip(self.fields, fdata))))
-        ferrors = XmlHelper.get_field_errors(node)
-        ferrors and self.field_errors.extend(ferrors)
-
-    def on_event(self, evt, is_final):
-        for msg in XmlHelper.message_iter(evt):
-            for node, error in XmlHelper.security_iter(msg.getElement('securityData')):
-                if error:
-                    self.security_errors.append(error)
-                else:
-                    self.on_security_node(node)
-
-
-class IntradayTickResponse(object):
-    def __init__(self, request):
-        self.request = request
-        self.ticks = []  # array of dicts
-
-    def as_frame(self):
-        """Return a data frame with no set index"""
-        return pd.DataFrame.from_records(self.ticks)
-
-
 class IntradayTickRequest(Request):
     def __init__(self, sid, start=None, end=None, events=['TRADE'], include_condition_codes=None,
                  include_nonplottable_events=None, include_exchange_codes=None, return_eids=None,
@@ -475,7 +479,7 @@ class IntradayTickRequest(Request):
         """
         Request.__init__(self, '//blp/refdata')
         self.sid = sid
-        self.events = isinstance(events, str) and [events] or events
+        self.events = [events] if isinstance(events, str) else events
         self.include_condition_codes = include_condition_codes
         self.include_nonplottable_events = include_nonplottable_events
         self.include_exchange_codes = include_exchange_codes
@@ -490,7 +494,7 @@ class IntradayTickRequest(Request):
         fmtargs = dict(clz=self.__class__.__name__,
                        sid=','.join(self.sid),
                        events=','.join(self.events))
-        return '<{clz}({sid}, [{events}])'.format(**fmtargs)
+        return '<{clz}({sid}, [{events}])>'.format(**fmtargs)
 
     def new_response(self):
         self.response = IntradayTickResponse(self)
@@ -526,17 +530,18 @@ class IntradayTickRequest(Request):
                 self.on_tick_data(tdata.getElement('tickData'))
 
 
-class IntradayBarResponse(object):
+class IntradayTickResponse(object):
     def __init__(self, request):
         self.request = request
-        self.bars = []  # array of dicts
+        self.ticks = []  # array of dicts
 
     def as_frame(self):
-        return pd.DataFrame.from_records(self.bars)
+        """Return a data frame with no set index"""
+        return pd.DataFrame.from_records(self.ticks)
 
 
 class IntradayBarRequest(Request):
-    def __init__(self, sid, start=None, end=None, event='TRADE', interval=None, gap_fill_initial_bar=None,
+    def __init__(self, sid, start=None, end=None, event='TRADE', interval=1, gap_fill_initial_bar=None,
                  return_eids=None, adjustment_normal=None, adjustment_abnormal=None, adjustment_split=None,
                  adjustment_follow_DPDF=None):
         """
@@ -545,9 +550,10 @@ class IntradayBarRequest(Request):
         events: [TRADE, BID, ASK, BID_BEST, ASK_BEST, BEST_BID, BEST_ASK]
         interval: int, between 1 and 1440 in minutes. If omitted, defaults to 1 minute
         gap_fill_initial_bar: bool
-                            If True, bar contains previous values if not ticks during the interval
+                              If True, bar contains previous values if not ticks during the interval
         """
         Request.__init__(self, '//blp/refdata')
+        assert event in ('TRADE', 'BID', 'ASK', 'BEST_BID', 'BEST_ASK')
         self.sid = sid
         self.event = event
         self.interval = interval
@@ -566,7 +572,7 @@ class IntradayBarRequest(Request):
                        event=self.event,
                        start=self.start,
                        end=self.end)
-        return '<{clz}({sid}, {event}, start={start}, end={end})'.format(**fmtargs)
+        return '<{clz}({sid}, {event}, start={start}, end={end})>'.format(**fmtargs)
 
     def new_response(self):
         self.response = IntradayBarResponse(self)
@@ -578,7 +584,7 @@ class IntradayBarRequest(Request):
         request.set('eventType', self.event)
         request.set('startDateTime', self.start)
         request.set('endDateTime', self.end)
-        request.set('interval', self.interval or 1)
+        request.set('interval', self.interval)
         self.set_flag(request, self.gap_fill_initial_bar, 'gapFillInitialBar')
         self.set_flag(request, self.return_eids, 'returnEids')
         self.set_flag(request, self.adjustment_normal, 'adjustmentNormal')
@@ -587,6 +593,13 @@ class IntradayBarRequest(Request):
         self.set_flag(request, self.adjustment_follow_DPDF, 'adjustmentFollowDPDF')
         return request
 
+    def on_event(self, evt, is_final):
+        for msg in XmlHelper.message_iter(evt):
+            data = msg.getElement('barData')
+            # tickData will have 0 to 1 tickData[] elements
+            if data.hasElement('barTickData'):
+                self.on_bar_data(data.getElement('barTickData'))
+
     def on_bar_data(self, bars):
         """Process the incoming tick data array"""
         for tick in XmlHelper.node_iter(bars):
@@ -594,12 +607,71 @@ class IntradayBarRequest(Request):
             barmap = {n: XmlHelper.get_child_value(tick, n) for n in names}
             self.response.bars.append(barmap)
 
+
+class IntradayBarResponse(object):
+    def __init__(self, request):
+        self.request = request
+        self.bars = []  # array of dicts
+
+    def as_frame(self):
+        return pd.DataFrame.from_records(self.bars)
+
+
+class EQSRequest(Request):
+    def __init__(self, name, type='GLOBAL', group='General', asof=None, language=None):
+        super(EQSRequest, self).__init__('//blp/refdata')
+        self.name = name
+        self.group = group
+        self.type = type
+        self.asof = pd.to_datetime(asof) if asof else None
+        self.language = language
+
+    def __repr__(self):
+        fmtargs = dict(clz=self.__class__.__name__,
+                       name=self.name,
+                       type=self.type,
+                       group=self.group,
+                       asof=self.asof)
+        return '<{clz}({name}, type={type}, group={group}, asof={asof})>'.format(**fmtargs)
+
+    def new_response(self):
+        self.response = EQSResponse(self)
+
+    def get_bbg_request(self, svc, session):
+        # create the bloomberg request object
+        request = svc.createRequest('BeqsRequest')
+        request.set('screenName', self.name)
+        if self.type:
+            request.set('screenType', self.type)
+        if self.group:
+            request.set('Group', self.group)
+        overrides = {}
+        if self.asof:
+            overrides['PiTDate'] = self.asof.strftime('%Y%m%d')
+        if self.language:
+            overrides['languageId'] = self.language
+        if overrides:
+            self.apply_overrides(request, overrides)
+        return request
+
+    def on_security_node(self, node):
+        sid = XmlHelper.get_child_value(node, 'security')
+        farr = node.getElement('fieldData')
+        fldnames = [str(farr.getElement(_).name()) for _ in range(farr.numElements())]
+        fdata = XmlHelper.get_child_values(farr, fldnames)
+        self.response.on_security_data(sid, dict(list(zip(fldnames, fdata))))
+        ferrors = XmlHelper.get_field_errors(node)
+        if ferrors:
+            self.field_errors.extend(ferrors)
+
     def on_event(self, evt, is_final):
         for msg in XmlHelper.message_iter(evt):
-            data = msg.getElement('barData')
-            # tickData will have 0 to 1 tickData[] elements
-            if data.hasElement('barTickData'):
-                self.on_bar_data(data.getElement('barTickData'))
+            data = msg.getElement('data')
+            for node, error in XmlHelper.security_iter(data.getElement('securityData')):
+                if error:
+                    self.security_errors.append(error)
+                else:
+                    self.on_security_node(node)
 
 
 class EQSResponse(object):
@@ -619,59 +691,6 @@ class EQSResponse(object):
         return pd.DataFrame.from_dict(data, orient='index')
 
 
-class EQSRequest(Request):
-    def __init__(self, name, type='GLOBAL', group='General', asof=None, language=None):
-        super(EQSRequest, self).__init__('//blp/refdata')
-        self.name = name
-        self.group = group
-        self.type = type
-        self.asof = asof and pd.to_datetime(asof) or None
-        self.language = language
-
-    def __repr__(self):
-        fmtargs = dict(clz=self.__class__.__name__,
-                       name=self.name,
-                       type=self.type,
-                       group=self.group,
-                       asof=self.asof)
-        return '<{clz}({name}, type={type}, group={group}, asof={asof})'.format(**fmtargs)
-
-    def new_response(self):
-        self.response = EQSResponse(self)
-
-    def get_bbg_request(self, svc, session):
-        # create the bloomberg request object
-        request = svc.createRequest('BeqsRequest')
-        request.set('screenName', self.name)
-        self.type and request.set('screenType', self.type)
-        self.group and request.set('Group', self.group)
-        overrides = {}
-        if self.asof:
-            overrides['PiTDate'] = self.asof.strftime('%Y%m%d')
-        if self.language:
-            overrides['languageId'] = self.language
-        overrides and self.apply_overrides(request, overrides)
-        return request
-
-    def on_security_node(self, node):
-        sid = XmlHelper.get_child_value(node, 'security')
-        farr = node.getElement('fieldData')
-        fldnames = [str(farr.getElement(_).name()) for _ in range(farr.numElements())]
-        fdata = XmlHelper.get_child_values(farr, fldnames)
-        self.response.on_security_data(sid, dict(list(zip(fldnames, fdata))))
-        ferrors = XmlHelper.get_field_errors(node)
-        ferrors and self.field_errors.extend(ferrors)
-
-    def on_event(self, evt, is_final):
-        for msg in XmlHelper.message_iter(evt):
-            data = msg.getElement('data')
-            for node, error in XmlHelper.security_iter(data.getElement('securityData')):
-                if error:
-                    self.security_errors.append(error)
-                else:
-                    self.on_security_node(node)
-
-
 class Terminal(object):
     """Submits requests to the Bloomberg Terminal and dispatches the events back to the request
     object for processing.
@@ -683,7 +702,7 @@ class Terminal(object):
         self.logger = log.instance_logger(repr(self), self)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}({self.host}:{self.port})'
+        return f'<{self.__class__.__name__}({self.host}:{self.port})>'
 
     def _create_session(self):
         opts = blpapi.SessionOptions()
@@ -695,7 +714,6 @@ class Terminal(object):
         session = self._create_session()
         if not session.start():
             raise Exception('failed to start session')
-
         try:
             self.logger.info(f'executing request: {repr(request)}')
             if not session.openService(request.svcname):
@@ -715,44 +733,42 @@ class Terminal(object):
                     request.on_event(evt, is_final=False)
                 else:
                     request.on_admin_event(evt)
-            request.has_exception and request.raise_exception()
+            if request.has_exception:
+                request.raise_exception()
             return request.response
         finally:
             session.stop()
 
-    def get_historical(self, sids, flds, start=None, end=None, period=None, ignore_security_error=0,
-                       ignore_field_error=0, **overrides):
+    def get_historical(self, sids, flds, start=None, end=None, period=None, ignore_security_error=False,
+                       ignore_field_error=False, **overrides):
         req = HistoricalDataRequest(sids, flds, start=start, end=end, period=period,
-                                    ignore_security_error=ignore_security_error,
-                                    ignore_field_error=ignore_field_error,
+                                    ignore_security_error=ignore_security_error, ignore_field_error=ignore_field_error,
                                     **overrides)
         return self.execute(req)
 
-    def get_reference_data(self, sids, flds, ignore_security_error=0, ignore_field_error=0, **overrides):
+    def get_reference_data(self, sids, flds, ignore_security_error=False, ignore_field_error=False, **overrides):
         req = ReferenceDataRequest(sids, flds, ignore_security_error=ignore_security_error,
                                    ignore_field_error=ignore_field_error, **overrides)
         return self.execute(req)
 
     def get_intraday_tick(self, sids, events=['TRADE'], start=None, end=None, include_condition_codes=None,
                           include_nonplottable_events=None, include_exchange_codes=None, return_eids=None,
-                          include_broker_codes=None, include_rsp_codes=None, include_bic_mic_codes=None,
-                          **overrides):
+                          include_broker_codes=None, include_rsp_codes=None, include_bic_mic_codes=None, **overrides):
         req = IntradayTickRequest(sids, start=start, end=end, events=events,
                                   include_condition_codes=include_condition_codes,
                                   include_nonplottable_events=include_nonplottable_events,
                                   include_exchange_codes=include_exchange_codes,
                                   return_eids=return_eids, include_broker_codes=include_broker_codes,
-                                  include_rsp_codes=include_rsp_codes,
-                                  include_bic_mic_codes=include_bic_mic_codes, **overrides)
+                                  include_rsp_codes=include_rsp_codes, include_bic_mic_codes=include_bic_mic_codes,
+                                  **overrides)
         return self.execute(req)
 
     def get_intraday_bar(self, sid, event='TRADE', start=None, end=None, interval=None, gap_fill_initial_bar=None,
                          return_eids=None, adjustment_normal=None, adjustment_abnormal=None, adjustment_split=None,
                          adjustment_follow_DPDF=None):
         req = IntradayBarRequest(sid, start=start, end=end, event=event, interval=interval,
-                                 gap_fill_initial_bar=gap_fill_initial_bar,
-                                 return_eids=return_eids, adjustment_normal=adjustment_normal,
-                                 adjustment_split=adjustment_split,
+                                 gap_fill_initial_bar=gap_fill_initial_bar, return_eids=return_eids,
+                                 adjustment_normal=adjustment_normal, adjustment_split=adjustment_split,
                                  adjustment_abnormal=adjustment_abnormal, adjustment_follow_DPDF=adjustment_follow_DPDF)
         return self.execute(req)
 
@@ -762,9 +778,11 @@ class Terminal(object):
 
 
 class SyncSubscription(object):
+    """Creates a persisted connection to the Bloomberg Terminal, to retrieve real-time data. Untested."""
+
     def __init__(self, tickers, fields, interval=None, host='localhost', port=8194):
-        self.fields = isinstance(fields, str) and [fields] or fields
-        self.tickers = isinstance(tickers, str) and [tickers] or tickers
+        self.fields = [fields] if isinstance(fields, str) else fields
+        self.tickers = [tickers] if isinstance(tickers, str) else tickers
         self.interval = interval
         self.host = host
         self.port = port
@@ -789,7 +807,7 @@ class SyncSubscription(object):
         # init subscriptions
         subs = blpapi.SubscriptionList()
         flds = ','.join(self.fields)
-        istr = self.interval and f'interval={self.interval:.1f}' or ''
+        istr = f'interval={self.interval:.1f}' if self.interval else ''
         for ticker in self.tickers:
             subs.add(ticker, flds, istr, blpapi.CorrelationId(ticker))
         session.subscribe(subs)

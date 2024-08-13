@@ -1,12 +1,18 @@
-import functools
-
 import numpy as np
 import pandas as pd
+from functools import update_wrapper
 
 
-is_decrease = lambda q1, q2: (q1 * q2) < 0
-is_increase = lambda q1, q2: (q1 * q2) > 0
-crosses_zero = lambda q1, q2: ((q1 + q2) * q1) < 0
+def is_decrease(q1, q2):
+    return (q1 * q2) < 0
+
+
+def is_increase(q1, q2):
+    return (q1 * q2) > 0
+
+
+def crosses_zero(q1, q2):
+    return ((q1 + q2) * q1) < 0
 
 
 def has_weekends(index):
@@ -59,14 +65,14 @@ class PerLevel(object):
 
 
 class PerSeries(object):
-    def __init__(self, fct, result_is_frame=0):
+    def __init__(self, fct, result_is_frame=False):
         self.fct = fct
         self.result_is_frame = result_is_frame
-        functools.update_wrapper(self, fct)
+        update_wrapper(self, fct)
 
     def __call__(self, *args, **kwargs):
         df_or_series = args[0]
-        if isinstance(df_or_series, (np.ndarray, pd.Series)):  # or len(df_or_series.columns) == 1:
+        if isinstance(df_or_series, (np.ndarray, pd.Series)):
             return self.fct(*args, **kwargs)
         elif not isinstance(df_or_series, pd.DataFrame):
             raise ValueError(f'Expected argument to be Series or DataFrame, not {type(df_or_series)}')
@@ -88,7 +94,7 @@ class PerSeries(object):
                 return df.apply(self.fct, args=args[1:], **kwargs)
 
 
-def per_series(result_is_frame=0):
+def per_series(result_is_frame=False):
     def _ps(fct):
         return PerSeries(fct, result_is_frame=result_is_frame)
 
@@ -102,7 +108,7 @@ def per_level():
     return _pl
 
 
-def insert_level(df, label, level=0, copy=0, axis=0, level_name=None):
+def insert_level(df, label, level=0, copy=False, axis=0, level_name=None):
     """Add a new level to the index with the specified label. The newly created index will be a MultiIndex.
 
        :param df: DataFrame
@@ -116,7 +122,8 @@ def insert_level(df, label, level=0, copy=0, axis=0, level_name=None):
     current = [src.get_level_values(lvl) for lvl in range(src.nlevels)]
     current.insert(level, [label] * len(src))
     idx = pd.MultiIndex.from_arrays(current)
-    level_name and idx.set_names(level_name, level, inplace=1)
+    if level_name:
+        idx.set_names(level_name, level, inplace=True)
     if axis == 0:
         df.columns = idx
     else:

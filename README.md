@@ -1,7 +1,13 @@
-# This is a Fork!
-I've updated the whole tia project with 2to3 to be Python 3 compliant. It is NOT Python 2 compliant, however.
+# tia: Toolkit for integration and analysis
 
-There are now community contributions to address deprecation warnings in Pandas. I'm open to accepting additional community contributions. Just submit a pull request.
+## Overview
+TIA is a toolkit that provides bloomberg data access, easier pdf generation, backtesting functionality,
+technical analysis functionality, return analysis, and few windows utils.
+
+# This is a Fork!
+The whole tia project has been updated with 2to3 to be Python 3 compliant. It is NOT Python 2 compliant, however.
+
+I've been maintaining this fork, since it's the best way I could find in order to extract Bloomberg data and it had a few issues. I'm open to accepting additional community contributions, just submit a pull request.
 
 ### Install tia with Python 3 changes + latest community contributions
 ```
@@ -42,11 +48,6 @@ git+https://github.com/PaulMest/tia.git@066549f834791b024c1d8eb595e0d18fa1e3c1c5
 ```
 
 
-# tia: Toolkit for integration and analysis
-
-## Overview
-TIA is a toolkit that provides bloomberg data access, easier pdf generation, backtesting functionality,
-technical analysis functionality, return analysis, and few windows utils.
 
 ## Examples
 
@@ -74,7 +75,7 @@ Utils
 
 
 ## Dependencies
-- Python 3.6 or newer
+- Python 3.6+
 
 ### Mandatory
 - [numpy](http://www.numpy.org/)
@@ -84,6 +85,6 @@ Utils
 - [matplotlib](http://matplotlib.sourceforge.net)
 
 ### Optional
+- [bloomberg](http://www.bloomberglabs.com/api/libraries/)
 - [reportlab](http://www.reportlab.com/)
 - [ta-lib](http://mrjbq7.github.io/ta-lib/)
-- [bloomberg](http://www.bloomberglabs.com/api/libraries/)

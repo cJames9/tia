@@ -26,7 +26,7 @@ def _frame_to_frame(frame, input_names, output_names, fct, *fctargs):
     return f
 
 
-@per_series(result_is_frame=1)
+@per_series(result_is_frame=True)
 def _series_to_frame(series, output_names, fct, *fctargs):
     nonulls = series.dropna()
     result = fct(nonulls.values, *fctargs)

@@ -116,5 +116,6 @@ def new_dynamic_image(path, hAlign=None):
         return DynamicPdfImage(path)
     else:
         img = DynamicImage(path)
-        hAlign and setattr(img, 'hAlign', hAlign)
+        if hAlign:
+            setattr(img, 'hAlign', hAlign)
         return img

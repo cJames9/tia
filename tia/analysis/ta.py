@@ -62,12 +62,12 @@ def _ensure_sorf(arg):
 
 
 def _ensure_col(arg, **kwds):
-    for k, v in kwds.items():
-        if v not in arg:
-            raise Exception(f'failed to find column for argument {k}={v}')
+    for key, value in kwds.items():
+        if value not in arg:
+            raise Exception(f'failed to find column for argument {key}={value}')
 
 
-def true_range(arg, high_col='high', low_col='low', close_col='close', skipna=0):
+def true_range(arg, high_col='high', low_col='low', close_col='close', skipna=False):
     """
     http://en.wikipedia.org/wiki/Average_true_range
     The largest of the following:
@@ -116,8 +116,8 @@ def dmi(arg, n, high_col='high', low_col='low', close_col='close'):
 
 def aroon(arg, n, up_col='close', dn_col='close'):
     """
-    TODO - need to verify that the dropna does not take away too many entries (ie maybe set to all? ) This function assumes that
-    the length of up_col is always equal to dn_col (ie values not missing in just one series)
+    TODO - need to verify that the dropna does not take away too many entries (ie maybe set to all?)
+    This function assumes that the length of up_col is always equal to dn_col (ie values not missing in just one series)
 
     arg: Series or DataFrame
     n: lookback count
@@ -151,7 +151,7 @@ def aroon(arg, n, up_col='close', dn_col='close'):
     return pd.DataFrame.from_items(data).reindex(arg.index)
 
 
-@per_series(result_is_frame=1)
+@per_series(result_is_frame=True)
 def macd(arg, nslow=26, nfast=12, nsignal=9):
     nslow, nfast, nsignal = int(nslow), int(nfast), int(nsignal)
     emafast = ema(arg, nfast)
@@ -183,9 +183,9 @@ def rsi(arg, n):
         n = int(n)
         converted = arg.dropna()
         change = converted.diff()
-        gain = change.apply(lambda c: c > 0 and c or 0)
+        gain = change.apply(lambda c: c if c > 0 else 0)
         avgGain = wilderma(gain, n)
-        loss = change.apply(lambda c: c < 0 and abs(c) or 0)
+        loss = change.apply(lambda c: abs(c) if c < 0 else 0)
         avgLoss = wilderma(loss, n)
 
         result = avgGain / avgLoss
@@ -194,7 +194,7 @@ def rsi(arg, n):
         return pd.Series(result, index=converted.index).reindex(arg.index)
 
 
-def cross_signal(s1, s2, continuous=0):
+def cross_signal(s1, s2, continuous=False):
     """ return a signal with the following
     1 : when all values of s1 cross all values of s2
     -1 : when all values of s2 cross below all values of s2
@@ -209,7 +209,7 @@ def cross_signal(s1, s2, continuous=0):
 
     def _convert(src, other):
         if isinstance(src, pd.DataFrame):
-            return src.min(axis=1, skipna=0), src.max(axis=1, skipna=0)
+            return src.min(axis=1, skipna=False), src.max(axis=1, skipna=False)
         elif isinstance(src, pd.Series):
             return src, src
         elif isinstance(src, (int, float)):
@@ -237,9 +237,9 @@ def cross_signal(s1, s2, continuous=0):
         # Just roll with 1, -1
         signal = signal.fillna(method='ffill')
         m1, m2 = df.upper1.first_valid_index(), df.upper2.first_valid_index()
-        if m1 is not None or m2 is not None:
-            m1 = m2 if m1 is None else m1
-            m2 = m1 if m2 is None else m2
+        if any([m1, m2]):
+            m1 = m1 or m2
+            m2 = m2 or m1
             fv = max(m1, m2)
             if np.isnan(signal[fv]):
                 signal[fv] = 0

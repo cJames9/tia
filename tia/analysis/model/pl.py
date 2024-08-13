@@ -68,15 +68,15 @@ class OpenAverageProfitAndLossCalculator(object):
             ltd_frame[TPL.PL] = 0
             return ltd_frame
         else:
-            pl.sort([TC.DT, TC.PID, TC.TID], inplace=1)
-            pl.reset_index(inplace=1, drop=1)
+            pl.sort([TC.DT, TC.PID, TC.TID], inplace=True)
+            pl.reset_index(inplace=True, drop=True)
             # check that all days can be priced
             has_position = pl[TC.PID] > 0
             missing_pxs = pl[MC.CLOSE].isnull()
             missing = pl[TC.DT][has_position & missing_pxs]
             if len(missing) > 0:
                 mdates = ','.join([_.strftime('%Y-%m-%d') for _ in set(missing[:5])])
-                mdates += (len(missing) > 5 and '...' or '')
+                mdates += '...' if len(missing) > 5 else ''
                 raise Exception(f'insufficient price data: {len(missing)} prices missing for dates {mdates}')
 
             # Now there is a row for every timestamp. Now compute the pl and fill in where missing data should be
@@ -89,24 +89,24 @@ class OpenAverageProfitAndLossCalculator(object):
             # Ensure only end of day is kept for dividends (join will match dvd to any transaction during day
             dvds = dvds.where(dts != dts.shift(-1), 0)
             # fill in pl dates
-            open_vals.ffill(inplace=1)
-            open_vals.fillna(0, inplace=1)
-            pos_qtys.ffill(inplace=1)
-            pos_qtys.fillna(0, inplace=1)
+            open_vals.ffill(inplace=True)
+            open_vals.fillna(0, inplace=True)
+            pos_qtys.ffill(inplace=True)
+            pos_qtys.fillna(0, inplace=True)
             # pid is the only tricky one, copy only while position is open
             inpos = intents.notnull() | (pos_qtys != 0)
             pids = np.where(inpos, pids.ffill(), 0)
             pl['pid'] = pids.astype(int)
             # Zero fill missing
-            dvds.fillna(0, inplace=1)
-            tids.fillna(0, inplace=1)
+            dvds.fillna(0, inplace=True)
+            tids.fillna(0, inplace=True)
             tids = tids.astype(int)
-            intents.fillna(0, inplace=1)
+            intents.fillna(0, inplace=True)
             intents = intents.astype(int)
-            sides.fillna(0, inplace=1)
+            sides.fillna(0, inplace=True)
             sides = sides.astype(int)
-            txn_fees.fillna(0, inplace=1)
-            premiums.fillna(0, inplace=1)
+            txn_fees.fillna(0, inplace=True)
+            premiums.fillna(0, inplace=True)
             # LTD p/l calculation
             fees = txn_fees.cumsum()
             total_vals = premiums.cumsum()
@@ -157,14 +157,13 @@ class TxnProfitAndLossDetails(object):
 
     @property
     def ltd_frame(self):
-        if self._ltd_frame is None:
-            if self._frame is not None:
-                self._ltd_frame = _dly_to_ltd(self._frame, self.ltd_cols)
-            elif self.txns is not None:
-                self._ltd_frame = OpenAverageProfitAndLossCalculator().compute(self.txns)
-            else:
-                raise Exception('either txns or pl frame must be defined')
-        return self._ltd_frame
+        if not any([self._ltd_frame, self._frame, self.txns]):
+            raise Exception('either txns or pl frame must be defined')
+        elif self._frame is not None:
+            self._ltd_frame = _dly_to_ltd(self._frame, self.ltd_cols)
+        elif self.txns is not None:
+            self._ltd_frame = OpenAverageProfitAndLossCalculator().compute(self.txns)
+            return self._ltd_frame
 
     @property
     def frame(self):
@@ -196,7 +195,7 @@ class TxnProfitAndLossDetails(object):
         return self.frame[TPL.PID] == pid
 
     def truncate(self, before=None, after=None, pid=None):
-        if before is None and after is None and pid is None:
+        if not any([before, after, pid]):
             return self
         elif before or after:
             sub = self.frame.truncate(before, after)
@@ -233,19 +232,19 @@ class ProfitAndLossDetails(object):
 
     @property
     def ltd_frame(self):
+        if not any([self._ltd_frame, self._frame]):
+            raise Exception('Both frame and ltd frame are None. At least one must be defined.')
         ltd = self._ltd_frame
         if ltd is None:
-            if self._frame is None:
-                raise Exception('Both frame and ltd frame are None. At least one must be defined.')
             self._ltd_frame = ltd = _dly_to_ltd(self._frame, PL.LTDS)
         return ltd
 
     @property
     def frame(self):
+        if not any([self._ltd_frame, self._frame]):
+            raise Exception('Both frame and ltd frame are None. At least one must be defined.')
         obs = self._frame
         if obs is None:
-            if self._ltd_frame is None:
-                raise Exception('Both frame and ltd frames are None. At least one must be defined.')
             self._frame = obs = _ltd_to_dly(self._ltd_frame, PL.LTDS)
         return obs
 
@@ -280,7 +279,7 @@ class ProfitAndLossDetails(object):
             for ix in ixs[1]:
                 sub = dd.loc[ix]
                 # need to get t+1 since actually draw down ends on the 0 value
-                end = dd.index[dd.index.get_loc(sub.index[-1]) + (last != sub.index[-1] and 1 or 0)]
+                end = dd.index[dd.index.get_loc(sub.index[-1]) + (1 if last != sub.index[-1] else 0)]
                 rows.append([sub.index[0], end, sub.vals.min(), sub.vals.idxmin()])
         f = pd.DataFrame.from_records(rows, columns=['dd start', 'dd end', 'maxdd', 'maxdd dt'])
         f['days'] = (f['dd end'] - f['dd start']).astype('timedelta64[D]')
@@ -326,17 +325,16 @@ class ProfitAndLossDetails(object):
     def _repr_html_(self):
         from tia.util.fmt import new_dynamic_formatter
 
-        fmt = new_dynamic_formatter(method='row', precision=2, pcts=1, trunc_dot_zeros=1, parens=1)
+        fmt = new_dynamic_formatter(method='row', precision=2, pcts=True, trunc_dot_zeros=True, parens=True)
         return fmt(self.summary.to_frame())._repr_html_()
 
-    def plot_ltd(self, ax=None, style='k', label='ltd', show_dd=1, guess_xlabel=1, title=True):
+    def plot_ltd(self, ax=None, style='k', label='ltd', show_dd=True, guess_xlabel=True, title=True):
         ltd = self.ltd_frame.pl
         ax = ltd.plot(ax=ax, style=style, label=label)
         if show_dd:
             dd = self.drawdowns
             dd.plot(style='r', label='drawdowns', alpha=.5)
             ax.fill_between(dd.index, 0, dd.values, facecolor='red', alpha=.25)
-            fmt = lambda x: x
             # guess the formatter
             if guess_xlabel:
                 from tia.util.fmt import guess_formatter
@@ -348,27 +346,28 @@ class ProfitAndLossDetails(object):
 
             # show the actualy date and value
             mdt, mdd = self.maxdd_dt, self.maxdd
-            bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.25)
+            bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.25)
             try:
                 dtstr = f'{mdt.to_period()}'
-            except:
+            except Exception as e:
+                import warnings
+                warnings.warn(f'Undocumented exception on tia/analysis/model/pl: {e}', category=ResourceWarning)
                 # assume daily
                 dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
-            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha="center", va="top", size=8,
-                    bbox=bbox_props)
+            ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha='center', va='top', size=8, bbox=bbox_props)
 
-        if title is True:
+        if title:
             df = new_dynamic_formatter(precision=1, parens=False, trunc_dot_zeros=True)
             total = df(ltd.iloc[-1])
             vol = df(self.std)
             mdd = df(self.maxdd)
             title = f'pnl {total}     vol {vol}     maxdd {mdd}'
+            ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
 
-        title and ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
         return ax
 
     def truncate(self, before=None, after=None):
-        if before is None and after is None:
+        if not any([before, after]):
             return self
         else:
             sub = self.frame.truncate(before, after)
@@ -414,13 +413,13 @@ class ProfitAndLoss(object):
             yield yr, ProfitAndLoss(details)
 
     def truncate(self, before=None, after=None, pid=None):
-        if before is None and after is None and pid is None:
+        if not any([before, after, pid]):
             return self
         else:
             details = self.dly_details.truncate(before, after)
             return ProfitAndLoss(details)
 
-    def report_by_year(self, summary_fct=None, years=None, ltd=1, prior_n_yrs=None, first_n_yrs=None, ranges=None,
+    def report_by_year(self, summary_fct=None, years=None, ltd=True, prior_n_yrs=None, first_n_yrs=None, ranges=None,
                        bm_rets=None):
         """Summarize the profit and loss by year
         :param summary_fct: function(ProfitAndLoss) and returns a dict or Series
@@ -492,11 +491,11 @@ class ProfitAndLoss(object):
 
 class TxnProfitAndLoss(ProfitAndLoss):
     def __init__(self, txns=None, txnpl_details=None):
-        if txns is None and txnpl_details is None:
+        if not any([txns, txnpl_details]):
             raise ValueError('txns or txn_details must be specified')
         self.txns = txns
         self._txn_details = txnpl_details
-        # Don't set the attribute, wany lazy property to be called
+        # Don't set the attribute, want lazy property to be called
         # ProfitAndLoss.__init__(self, None)
 
     @property
@@ -513,7 +512,7 @@ class TxnProfitAndLoss(ProfitAndLoss):
     dly_details = lazy_property(lambda self: self.txn_details.dly, 'dly_details')
 
     def truncate(self, before=None, after=None, pid=None):
-        if before is None and after is None and pid is None:
+        if not any([before, after, pid]):
             return self
         else:
             details = self.txn_details.truncate(before, after, pid)

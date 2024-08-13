@@ -43,11 +43,13 @@ class RoiiRetCalculator(RetCalculator):
             if leverage <= 0:
                 raise ValueError(f'leverage must be a positive non-zero number, not {leverage}')
             else:
+                # TODO: how to treat these without lambda?
                 get_lev = lambda ts: leverage
         elif isinstance(leverage, pd.Series):
             get_lev = lambda ts: leverage.asof(ts)
         else:
-            raise ValueError(f'leverage must be None, positive scalar or Datetime/Period indexed Series, not {type(leverage)}')
+            msg = f'leverage must be None, positive scalar or Datetime/Period indexed Series, not {type(leverage)}'
+            raise ValueError(msg)
 
         self.leverage = leverage
         self.get_lev = get_lev
@@ -60,7 +62,7 @@ class RoiiRetCalculator(RetCalculator):
             if pid != 0:
                 cost = abs(pframe[TPL.OPEN_VAL].iloc[0])
                 ppl = pframe[TPL.PL]
-                lev = None if get_lev is None else get_lev(pframe[TPL.DT].iloc[0])
+                lev = None if not get_lev else get_lev(pframe[TPL.DT].iloc[0])
                 ret = return_on_initial_capital(cost, ppl, lev)
                 txnrets[ppl.index] = ret
 
@@ -127,11 +129,10 @@ class AumRetCalculator(RetCalculator):
 
 class CumulativeRets(object):
     def __init__(self, rets=None, ltd_rets=None):
-        if rets is None and ltd_rets is None:
-            raise ValueError('rets or ltd_rets must be specified')
-
         if rets is None:
-            if ltd_rets.empty:
+            if ltd_rets is None:
+                raise ValueError('rets or ltd_rets must be specified')
+            elif ltd_rets.empty:
                 rets = ltd_rets
             else:
                 rets = (1. + ltd_rets).pct_change()
@@ -151,7 +152,7 @@ class CumulativeRets(object):
     def asfreq(self, freq):
         other_pds_per_year = periodicity(freq)
         if self.pds_per_year < other_pds_per_year:
-            msg = 'Cannot downsample returns. Cannot convert from {0} periods/year to {1}'
+            msg = f'Cannot downsample returns. Cannot convert from {0} periods/year to {1}'
             raise ValueError(msg.format(self.pds_per_year, other_pds_per_year))
 
         if freq == 'B':
@@ -192,7 +193,7 @@ class CumulativeRets(object):
     skew = lazy_property(lambda self: self.rets.skew(), 'skew')
 
     sharpe_ann = lazy_property(lambda self: np.divide(self.ltd_ann, self.std_ann), 'sharpe_ann')
-    downside_deviation = lazy_property(lambda self: downside_deviation(self.rets, mar=0, full=0, ann=1),
+    downside_deviation = lazy_property(lambda self: downside_deviation(self.rets, mar=0, full=False, ann=True),
                                        'downside_deviation')
     sortino = lazy_property(lambda self: self.ltd_ann / self.downside_deviation, 'sortino')
 
@@ -262,7 +263,7 @@ class CumulativeRets(object):
     def _repr_html_(self):
         from tia.util.fmt import new_dynamic_formatter
 
-        fmt = new_dynamic_formatter(method='row', precision=2, pcts=1, trunc_dot_zeros=1, parens=1)
+        fmt = new_dynamic_formatter(method='row', precision=2, pcts=True, trunc_dot_zeros=True, parens=True)
         df = self.summary.to_frame()
         return fmt(df)._repr_html_()
 
@@ -294,7 +295,7 @@ class CumulativeRets(object):
         alpha = y_ann - beta * x_ann
         return pd.Series({'alpha': alpha, 'beta': beta}, name=bm_freq)
 
-    def plot_ltd(self, ax=None, style='k', label='ltd', show_dd=1, title=True, legend=1):
+    def plot_ltd(self, ax=None, style='k', label='ltd', show_dd=True, title=True, legend=True):
         ltd = self.ltd_rets
         ax = ltd.plot(ax=ax, style=style, label=label)
         if show_dd:
@@ -304,19 +305,21 @@ class CumulativeRets(object):
             fmt = PercentFormatter
 
             AxesFormat().Y.percent().X.label('').apply(ax)
-            legend and ax.legend(loc='upper left', prop={'size': 12})
+            if legend:
+                ax.legend(loc='upper left', prop={'size': 12})
 
             # show the actualy date and value
             mdt, mdd = self.maxdd_dt, self.maxdd
             bbox_props = dict(boxstyle='round', fc='w', ec='0.5', alpha=0.25)
             try:
                 dtstr = f'{mdt.to_period()}'
-            except:
+            except Exception as e:
+                print(f'Undocumented exception on tia/analysis/model/ret: {e}')
                 # assume daily
                 dtstr = f'{hasattr(mdt, "date") and mdt.date() or mdt}'
             ax.text(mdt, dd[mdt], f'{dtstr} \n {fmt(mdd)}'.strip(), ha='center', va='top', size=8, bbox=bbox_props)
 
-        if title is True:
+        if title:
             pf = new_percent_formatter(1, parens=False, trunc_dot_zeros=True)
             ff = new_float_formatter(precision=1, parens=False, trunc_dot_zeros=True)
             total = pf(self.ltd_ann)
@@ -327,17 +330,18 @@ class CumulativeRets(object):
             # applying one at a time
             title = f'ret_ann {total}     vol_ann {vol}     sharpe {sh}     maxdd {mdd}'
             title = title.replace('_ann', r'$\mathregular{_{ann}}$')
+            ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
 
-        title and ax.set_title(title, fontdict=dict(fontsize=10, fontweight='bold'))
         return ax
 
-    def plot_ret_on_dollar(self, title=None, show_maxdd=1, figsize=None, ax=None, append=0, label=None, **plot_args):
+    def plot_ret_on_dollar(self, title=None, show_maxdd=True, figsize=None, ax=None, append=False, label=None,
+                           **plot_args):
         plot_return_on_dollar(self.rets, title=title, show_maxdd=show_maxdd, figsize=figsize, ax=ax, append=append,
                               label=label, **plot_args)
 
     def plot_hist(self, ax=None, **histplot_kwargs):
-        pf = new_percent_formatter(precision=1, parens=False, trunc_dot_zeros=1)
-        ff = new_float_formatter(precision=1, parens=False, trunc_dot_zeros=1)
+        pf = new_percent_formatter(precision=1, parens=False, trunc_dot_zeros=True)
+        ff = new_float_formatter(precision=1, parens=False, trunc_dot_zeros=True)
 
         ax = self.rets.hist(ax=ax, **histplot_kwargs)
         AxesFormat().X.percent(1).apply(ax)
@@ -348,7 +352,7 @@ class CumulativeRets(object):
         ax.text(0, 1, txt, fontdict={'fontweight': 'bold'}, bbox=bbox, ha='left', va='top', transform=ax.transAxes)
         return ax
 
-    def filter(self, mask, keep_ltd=0):
+    def filter(self, mask, keep_ltd=False):
         if isinstance(mask, pd.Series):
             mask = mask.values
         rets = self.rets.loc[mask]
@@ -405,7 +409,7 @@ class Performance(object):
         details = self.txn_details.truncate(before, after)
         return Performance(details)
 
-    def report_by_year(self, summary_fct=None, years=None, ltd=1, prior_n_yrs=None, first_n_yrs=None, ranges=None,
+    def report_by_year(self, summary_fct=None, years=None, ltd=True, prior_n_yrs=None, first_n_yrs=None, ranges=None,
                        bm_rets=None):
         """Summary the returns
         :param summary_fct: function(Rets) and returns a dict or Series
@@ -418,8 +422,6 @@ class Performance(object):
         :param dm_dly_rets: daily return series for the benchmark for beta/alpha calcs
         :return: DataFrame
         """
-        if years and np.isscalar(years):
-            years = [years]
 
         if summary_fct is None:
             def summary_fct(performance):
@@ -446,7 +448,8 @@ class Performance(object):
 
         results = OrderedDict()
 
-        if years is not False:
+        if years:
+            years = years if not np.isscalar(years) else [years]
             for yr, robj in self.iter_by_year():
                 if years is None or yr in years:
                     results[yr] = summary_fct(robj)

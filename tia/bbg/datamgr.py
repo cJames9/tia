@@ -14,7 +14,9 @@ from datetime import datetime
 from tia.bbg import LocalTerminal
 import tia.util.log as log
 
-_force_array = lambda x: isinstance(x, str) and [x] or x
+
+def _force_array(x):
+    return [x] if isinstance(x, str) else x
 
 
 class SidAccessor(object):
@@ -38,11 +40,10 @@ class SidAccessor(object):
         frame = self.mgr.get_attributes(self.sid, flds, **overrides)
         if self.mgr.sid_result_mode == 'frame':
             return frame
+        elif isinstance(flds, str):
+            return frame.iloc[0, 0]
         else:
-            if isinstance(flds, str):
-                return frame.iloc[0, 0]
-            else:
-                return frame.values[0].tolist()
+            return frame.values[0].tolist()
 
     def __getitem__(self, flds):
         return self.get_attributes(flds, **self.overrides)
@@ -107,8 +108,8 @@ class DataManager(object):
     RESULT_MODE_VALUES = 'values'
     RESULT_MODE_FRAME = 'frame'
 
-    def __init__(self, sid_result_mode=None):
-        self._sid_result_mode = sid_result_mode or self.RESULT_MODE_VALUES
+    def __init__(self, sid_result_mode='values'):
+        self._sid_result_mode = sid_result_mode
 
     def get_attributes(self, sids, flds, **overrides):
         raise NotImplementedError('must implement get_attributes')
@@ -135,13 +136,13 @@ class DataManager(object):
 
 
 class BbgDataManager(DataManager):
-    def __init__(self, terminal=None, sid_result_mode=None):
+    def __init__(self, terminal=None, sid_result_mode='frame'):
         """ Provide simple access to the Bloomberg API.
 
         Parameters
         ----------
         terminal : Terminal, default to None
-                    If None, then use the default LocalTerminal object defined in the bbg package
+                   If None, then uses the default LocalTerminal object defined in the bbg package
         sid_result_mode: (values|frame) values will return tuples, frame returns DataFrame
         """
         DataManager.__init__(self, sid_result_mode)
@@ -156,28 +157,23 @@ class BbgDataManager(DataManager):
         frame = self.terminal.get_historical(sids, flds, start=start, end=end, period=period, **overrides).as_frame()
         if isinstance(sids, str):
             return frame[sids]
-        else:  # multi-indexed frame
-            if isinstance(flds, str):
-                frame.columns = frame.columns.droplevel(1)
+        elif isinstance(flds, str):  # multi-indexed frame
+            frame.columns = frame.columns.droplevel(1)
             return frame
 
 
 class Storage(object):
     def key_to_string(self, key):
         def _to_str(val):
-            if hasattr(val, 'iteritems'):
-                if val:
-                    # Sort keys to keep order and drop any null values
-                    tmp = ','.join(['{0}={1}'.format(k, _to_str(val[k])) for k in sorted(val.keys()) if val[k]])
-                    return tmp if tmp else str(None)
-                else:
-                    return str(None)
+            if not val:
+                return str(None)
+            elif hasattr(val, 'iteritems'):
+                # Sort keys to keep order and drop any null values
+                tmp = ','.join([f'{k}={_to_str(val[k])}' for k in sorted(val.keys()) if val[k]])
+                return tmp if tmp else str(None)
             elif isinstance(val, (tuple, list)):
-                if val:
-                    tmp = ','.join([_to_str(_) for _ in val])
-                    return tmp if tmp else str(None)
-                else:
-                    return str(None)
+                tmp = ','.join([_to_str(_) for _ in val])
+                return tmp if tmp else str(None)
             else:
                 sval = str(val)
                 return sval.replace('/', '-')
@@ -202,7 +198,7 @@ class MemoryStorage(Storage):
 
 
 class HDFStorage(Storage):
-    def __init__(self, hdfpath, readonly=0, complevel=None, complib=None, fletcher32=False, format=None):
+    def __init__(self, hdfpath, readonly=False, complevel=None, complib=None, fletcher32=False, format=None):
         self.hdfpath = hdfpath
         self.readonly = readonly
         self._file_exists = None
@@ -210,14 +206,13 @@ class HDFStorage(Storage):
         self.format = format
         self.get_store_kwargs = {'complevel': complevel, 'complib': complib, 'fletcher32': fletcher32}
 
-    def get_store(self, write=0):
+    def get_store(self, write=False):
         if self._store is not None:
             return self._store
+        elif write:
+            return pd.HDFStore(self.hdfpath, mode='a' if self.file_exists else 'w', **self.get_store_kwargs)
         else:
-            if write:
-                return pd.HDFStore(self.hdfpath, mode=self.file_exists and 'a' or 'w', **self.get_store_kwargs)
-            else:
-                return pd.HDFStore(self.hdfpath, **self.get_store_kwargs)
+            return pd.HDFStore(self.hdfpath, **self.get_store_kwargs)
 
     @property
     def file_exists(self):
@@ -232,7 +227,7 @@ class HDFStorage(Storage):
             store = None
             managed = self._store is None
             try:
-                store = self.get_store(write=0)
+                store = self.get_store(write=False)
                 path = self.key_to_string(key)
                 if path in store:
                     df = store[path]
@@ -280,7 +275,7 @@ class CacheOnlyDataManager(DataManager):
         fstr = ','.join(flds)
         ostr = ''
         if overrides:
-            ostr = ', overrides=' + ','.join([f'{str(k)}={str(v)}' for k, v in overrides.items()])
+            ostr = ', overrides=' + ','.join([f'{str(key)}={str(value)}' for key, value in overrides.items()])
         msg = f'Reference data for sids={sstr}, flds={fstr}{ostr}'
         raise CacheMissError(msg)
 
@@ -385,15 +380,15 @@ class CachedDataManager(DataManager):
         is_fld_str = isinstance(flds, str)
         flds = _force_array(flds)
         sids = _force_array(sids)
-        end = (end and self._date_only(end)) or self._date_only(self.ts)
+        end = self._date_only(end) if end else self._date_only(self.ts)
         start = self._date_only(start)
         frames = {}
 
         for sid in sids:
             key = (sid, 'historical', dict(period=period))
             if overrides:
-                for k, v in overrides.items():
-                    key[2][k] = v
+                for key, value in overrides.items():
+                    key[2][key] = value
 
             cached_frame, userdata = self.storage.get(key)
             if cached_frame is None:
@@ -406,7 +401,7 @@ class CachedDataManager(DataManager):
                 cache_columns = cached_frame.columns
                 requested_columns = pd.Index(flds)
                 missing_columns = requested_columns - cache_columns
-                dirty = 0
+                dirty = False
                 # Ensure any currently stored fields are kept in synch with dates
                 if start < cache_start:
                     self.logger.info(f'{sid} request for {",".join(cache_columns)} is older than data in cache {cache_start}')
@@ -415,7 +410,7 @@ class CachedDataManager(DataManager):
                     previous = previous.loc[previous.index < cache_start]
                     if len(previous.index) > 0:
                         cached_frame = pd.concat([previous, cached_frame])
-                        dirty = 1
+                        dirty = True
                 if end > cache_end:
                     ccols = ','.join(cache_columns)
                     self.logger.info(f'{sid} request for {ccols} is more recent than data in cache {cache_end}')
@@ -424,7 +419,7 @@ class CachedDataManager(DataManager):
                     post = post.loc[post.index > cache_end]
                     if len(post.index) > 0:
                         cached_frame = pd.concat([cached_frame, post])
-                        dirty = 1
+                        dirty = True
 
                 if dirty:
                     cached_frame.sort_index()
@@ -434,9 +429,10 @@ class CachedDataManager(DataManager):
                     self.logger.info(f'{sid}: {",".join(missing_columns)} not in cache, requested for dates {min(cache_start, start)} to {max(cache_end, end)}')
                     newdata = self.dm.get_historical(sid, missing_columns, min(cache_start, start), max(end, cache_end))
                     cached_frame = pd.concat([cached_frame, newdata], axis=1)
-                    dirty = 1
+                    dirty = True
 
-                dirty and self.storage.set(key, cached_frame, start=min(cache_start, start), end=max(cache_end, end))
+                if dirty:
+                    self.storage.set(key, cached_frame, start=min(cache_start, start), end=max(cache_end, end))
                 frames[sid] = cached_frame.loc[start:end, flds]
 
         if is_str:

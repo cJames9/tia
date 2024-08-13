@@ -17,7 +17,6 @@ class InstrumentPrices(object):
         self.frame = frame
 
     def _ensure_ohlc(self, frame):
-        # missing = pd.Index(['open', 'high', 'low', 'close']).difference(frame.columns)
         missing = pd.Index(['open', 'high', 'low', 'close']) - frame.columns
         if len(missing) != 0:
             raise ValueError(f'price frame missing expected columns: {",".join([m for m in missing])}')
@@ -109,6 +108,9 @@ class Instrument(CostCalculator, EodMarketData):
             tpxs = self.pxs.frame.truncate(before, after)
             return Instrument(self.sid, InstrumentPrices(tpxs), multiplier=self.multiplier)
 
+    def getpx(self, how, dt):
+        return how if not isinstance(how, str) else self.pxs.frame[how].asof(dt)
+
     def new_buy_and_hold_port(self, qty=1., open_px='close', open_dt=None, close_px='close', close_dt=None,
                               ret_calc=None):
         """
@@ -124,12 +126,10 @@ class Instrument(CostCalculator, EodMarketData):
         from tia.analysis.model.trd import TradeBlotter
         from tia.analysis.model.port import SingleAssetPortfolio
 
-        getpx = lambda how, dt: how if not isinstance(how, str) else self.pxs.frame[how].asof(dt)
-
         open_dt = open_dt or self.pxs.frame.index[0]
-        open_px = getpx(open_px, open_dt)
+        open_px = self.getpx(open_px, open_dt)
         close_dt = close_dt or self.pxs.frame.index[-1]
-        close_px = getpx(close_px, close_dt)
+        close_px = self.getpx(close_px, close_dt)
 
         pricer = self.truncate(open_dt, close_dt)
         blotter = TradeBlotter()
@@ -192,15 +192,15 @@ def get_dividends_yahoo(sid, start, end):
     from pandas.io.common import urlopen
 
     start, end = pd.to_datetime(start), pd.to_datetime(end)
-    url = ('http://ichart.finance.yahoo.com/table.csv?' + f's={sid}' +
-           f'&a={(start.month - 1)}' +
-           f'&b={start.day}' +
-           f'&c={start.year}' +
-           f'&d={(end.month - 1)}' +
-           f'&e={end.day}' +
-           f'&f={end.year}' +
-           '&g=v' +  # THE CHANGE
-           '&ignore=.csv')
+    url = ('http://ichart.finance.yahoo.com/table.csv?' + f's={sid}'
+           + f'&a={(start.month - 1)}'
+           + f'&b={start.day}'
+           + f'&c={start.year}'
+           + f'&d={(end.month - 1)}'
+           + f'&e={end.day}'
+           + f'&f={end.year}'
+           + '&g=v'  # THE CHANGE
+           + '&ignore=.csv')
 
     with urlopen(url) as resp:
         lines = resp.read()
@@ -208,7 +208,7 @@ def get_dividends_yahoo(sid, start, end):
                      parse_dates=True, na_values='-')[::-1]
     # Yahoo! Finance sometimes does this awesome thing where they
     # return 2 rows for the most recent business day
-    if len(rs) > 2 and rs.index[-1] == rs.index[-2]:  # pragma: no cover
+    if len(rs) > 2 and rs.index[-1] == rs.index[-2]:
         rs = rs[:-1]
     return rs
 
@@ -274,7 +274,7 @@ def load_bbg_stock(sid_or_accessor, start=None, end=None, dvds=True):
     accessor = _resolve_accessor(sid_or_accessor)
     sid = accessor.sid
     pxframe = accessor.get_historical(FLDS, start=start, end=end).rename(columns=RENAME)
-    dvdframe = accessor.get_attributes(DVD_FLD, ignore_field_error=1)
+    dvdframe = accessor.get_attributes(DVD_FLD, ignore_field_error=True)
 
     if isinstance(dvdframe, pd.DataFrame):
         dvdframe = dvdframe[['Ex-Date', 'Dividend Amount']].rename(
@@ -282,7 +282,6 @@ def load_bbg_stock(sid_or_accessor, start=None, end=None, dvds=True):
         dvdframe = dvdframe.set_index('date').sort_index()
         dvdframe = dvdframe.truncate(start, end)
         # sanity check - not expected currently
-        # missing = dvdframe.index.difference(pxframe.index)
         missing = dvdframe.index - pxframe.index
         if len(missing) > 0:
             missing_dates = ','.join([m.strftime('%Y-%m-%d') for m in missing])
@@ -335,8 +334,10 @@ def load_bbg_future(sid_or_accessor, start=None, end=None):
     mult = 1.
     try:
         mult = float(accessor.FUT_VAL_PT)
-    except:
-        pass
+    except Exception as e:
+        import warnings
+        warnings.warn(f'Undocumented exception on tia/analysis/model/ins: {e}', category=ResourceWarning)
+        # pass
 
     return Instrument(sid, pxs, multiplier=mult)
 

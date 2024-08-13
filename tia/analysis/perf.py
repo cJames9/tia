@@ -29,7 +29,7 @@ PER_YEAR_MAP = {
 
 
 def guess_freq(index):
-    # admittedly weak way of doing this...This needs to be abolished
+    # FIXME: admittedly weak way of doing this... This needs to be abolished
     if isinstance(index, (pd.Series, pd.DataFrame)):
         index = index.index
 
@@ -39,7 +39,7 @@ def guess_freq(index):
         raise Exception('cannot guess frequency with less than 3 items')
     else:
         lb = min(7, len(index))
-        idx_zip = lambda: list(zip(index[-lb:-1], index[-(lb-1):]))
+        idx_zip = list(zip(index[-lb:-1], index[-(lb-1):]))
 
         diff = min([t2 - t1 for t1, t2, in idx_zip()])
         if diff.days <= 1:
@@ -56,9 +56,9 @@ def guess_freq(index):
             diff = min([t2.year - t1.year for t1, t2, in idx_zip()])
             if diff == 1:
                 return 'A'
-
-            strs = ','.join([i.strftime('%Y-%m-%d') for i in index[-lb:]])
-            raise Exception(f'unable to determine frequency, last {lb} dates {strs}')
+            else:
+                strs = ','.join([i.strftime('%Y-%m-%d') for i in index[-lb:]])
+                raise Exception(f'unable to determine frequency, last {lb} dates {strs}')
 
 
 def periodicity(freq_or_frame):
@@ -102,8 +102,8 @@ periods_in_year = periodicity
 
 
 def _resolve_periods_in_year(scale, frame):
-    """ Convert the scale to an annualzation factor.  If scale is None then attempt to resolve from frame. If scale is a scalar then
-        use it. If scale is a string then use it to lookup the annual factor
+    """ Convert the scale to an annualzation factor.  If scale is None then attempt to resolve from frame. If scale is
+        a scalar then use it. If scale is a string then use it to lookup the annual factor
     """
     if scale is None:
         return periodicity(frame)
@@ -187,6 +187,7 @@ def rolling_returns_cumulative(returns, window, min_periods=1, geometric=True):
     min_periods : minimum number of observations in a window
     geometric : link the returns geometrically
     """
+    # TODO: how to implement this without using lambda?
     if geometric:
         rc = lambda x: (1. + x[np.isfinite(x)]).prod() - 1.
     else:
@@ -279,7 +280,7 @@ def max_drawdown(returns=None, geometric=True, dd=None, inc_date=False):
         return mdd if not inc_date else (mdd, mddidx)
 
 
-@per_series(result_is_frame=1)
+@per_series(result_is_frame=True)
 def drawdown_info(returns, geometric=True):
     """Return a DataFrame containing information about ALL the drawdowns for the rets. The frame
     contains the columns:
@@ -301,14 +302,14 @@ def drawdown_info(returns, geometric=True):
         for ix in ixs[1]:
             sub = dd.loc[ix]
             # need to get t+1 since actually draw down ends on the 0 value
-            end = dd.index[dd.index.get_loc(sub.index[-1]) + (last != sub.index[-1] and 1 or 0)]
+            end = dd.index[dd.index.get_loc(sub.index[-1]) + (1 if last != sub.index[-1] else 0)]
             rows.append([sub.index[0], end, sub.vals.min(), sub.vals.idxmin()])
     f = pd.DataFrame.from_records(rows, columns=['dd start', 'dd end', 'maxdd', 'maxdd dt'])
     f['days'] = (f['dd end'] - f['dd start']).astype('timedelta64[D]')
     return f
 
 
-def std_annualized(returns, scale=None, expanding=0):
+def std_annualized(returns, scale=None, expanding=False):
     scale = _resolve_periods_in_year(scale, returns)
     if expanding:
         return np.sqrt(scale) * pd.expanding_std(returns)
@@ -316,7 +317,7 @@ def std_annualized(returns, scale=None, expanding=0):
         return np.sqrt(scale) * returns.std()
 
 
-def sharpe(returns, rfr=0, expanding=0):
+def sharpe(returns, rfr=0, expanding=False):
     """
     returns: periodic return string
     rfr: risk free rate
@@ -336,7 +337,7 @@ def sharpe_annualized(returns, rfr_ann=0, scale=None, expanding=False, geometric
     return (retsann - rfr_ann) / stdann
 
 
-def downside_deviation(rets, mar=0, expanding=0, full=0, ann=0):
+def downside_deviation(rets, mar=0, expanding=False, full=False, ann=False):
     """Compute the downside deviation for the specifed return series
     :param rets: periodic return series
     :param mar: minimum acceptable rate of return (MAR)
@@ -359,7 +360,7 @@ def downside_deviation(rets, mar=0, expanding=0, full=0, ann=0):
         return dd
 
 
-def sortino_ratio(rets, rfr_ann=0, mar=0, full=0, expanding=0):
+def sortino_ratio(rets, rfr_ann=0, mar=0, full=False, expanding=False):
     """Compute the sortino ratio as (Ann Rets - Risk Free Rate) / Downside Deviation Ann
 
     :param rets: period return series
@@ -370,7 +371,7 @@ def sortino_ratio(rets, rfr_ann=0, mar=0, full=0, expanding=0):
     :return:
     """
     annrets = returns_annualized(rets, expanding=expanding) - rfr_ann
-    return annrets / downside_deviation(rets, mar=mar, expanding=expanding, full=full, ann=1)
+    return annrets / downside_deviation(rets, mar=mar, expanding=expanding, full=full, ann=True)
 
 
 def information_ratio(rets, bm_rets, scale=None, expanding=False):
@@ -390,14 +391,14 @@ def information_ratio(rets, bm_rets, scale=None, expanding=False):
     return (rets_ann - bm_rets_ann) / tracking_error_ann
 
 
-def upside_potential_ratio(rets, mar=0, full=0, expanding=0):
+def upside_potential_ratio(rets, mar=0, full=False, expanding=False):
     if isinstance(rets, pd.Series):
         above = rets[rets > mar]
         excess = -mar + above
         if expanding:
             n = pd.expanding_count(rets) if full else pd.expanding_count(above)
             upside = excess.cumsum() / n
-            downside = downside_deviation(rets, mar=mar, full=full, expanding=1)
+            downside = downside_deviation(rets, mar=mar, full=full, expanding=expanding)
             return (upside / downside).reindex(rets.index).fillna(method='ffill')
         else:
             n = rets.count() if full else above.count()
@@ -464,7 +465,7 @@ def hurst_exponent(px, lags=list(range(2, 100))):
     return poly[0] * 2.0
 
 
-def summarize_returns(period_rets, rollup='M', prefix=1, ret_method='compound', yearly=1, ltd=1):
+def summarize_returns(period_rets, rollup='M', prefix=1, ret_method='compound', yearly=True, ltd=True):
     # TODO - should be able to handle DateTimeIndex
     if not isinstance(period_rets.index, pd.PeriodIndex):
         raise Exception('expected periodic return series')

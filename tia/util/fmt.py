@@ -5,11 +5,10 @@ import pandas as pd
 import pandas._libs.lib as lib
 import numpy as np
 
-pd_is_datetime_arraylike = None
 try:
     from pandas.core.common import is_datetime_arraylike as pd_is_datetime_arraylike
-except:
-    pass
+except ModuleNotFoundError:
+    pd_is_datetime_arraylike = None
 
 from functools import partial
 
@@ -46,8 +45,8 @@ class DateTimeFormat(object):
 
 
 class NumberFormat(object):
-    def __init__(self, precision=2, commas=True, parens=True, suffix=None, kind='f', coerce=True,
-                 transform=None, nan='nan', prefix=None, lpad_zero=1, do_raise=0, trunc_dot_zeros=0):
+    def __init__(self, precision=2, commas=True, parens=True, suffix=None, kind='f', coerce=True, transform=None,
+                 nan='nan', prefix=None, lpad_zero=True, do_raise=False, trunc_dot_zeros=False):
         """
         Parameters
         ----------
@@ -136,43 +135,43 @@ class NumberFormat(object):
             return f'{self.prefix}{txt}{self.suffix}'
 
 
-def new_int_formatter(commas=True, parens=True, prefix=None, suffix=None, coerce=True, nan='nan', trunc_dot_zeros=0):
+def new_int_formatter(commas=True, parens=True, prefix=None, suffix=None, coerce=True, nan='nan',
+                      trunc_dot_zeros=False):
     precision = 0
     return NumberFormat(**locals())
 
 
 def new_float_formatter(precision=2, commas=True, parens=True, prefix=None, suffix=None, coerce=True, nan='nan',
-                        trunc_dot_zeros=0):
+                        trunc_dot_zeros=False):
     return NumberFormat(**locals())
 
 
-def new_thousands_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=0,
+def new_thousands_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=False,
                             suffix='k'):
     transform = lambda v: v * 1e-3
     return NumberFormat(**locals())
 
 
-def new_millions_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=0,
+def new_millions_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=False,
                            suffix='M'):
     transform = lambda v: v * 1e-6
     return NumberFormat(**locals())
 
 
-def new_billions_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=0,
+def new_billions_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=False,
                            suffix='B'):
     transform = lambda v: v * 1e-9
     return NumberFormat(**locals())
 
 
-def new_trillions_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=0):
+def new_trillions_formatter(precision=1, commas=True, parens=True, nan='nan', prefix=None, trunc_dot_zeros=False,
+                            suffix='T'):
     transform = lambda v: v * 1e-12
-    suffix = 'T'
     return NumberFormat(**locals())
 
 
 def new_percent_formatter(precision=2, commas=True, parens=True, prefix=None, suffix=None, coerce=True,
-                          transform=lambda v: v,
-                          nan='nan', trunc_dot_zeros=0):
+                          transform=lambda v: v, nan='nan', trunc_dot_zeros=False):
     kind = '%'
     return NumberFormat(**locals())
 
@@ -181,8 +180,8 @@ def new_datetime_formatter(fmtstr='%d-%b-%y', coerce=True):
     return DateTimeFormat(**locals())
 
 
-def guess_formatter(values, precision=1, commas=True, parens=True, nan='nan', prefix=None, pcts=0,
-                    trunc_dot_zeros=0):
+def guess_formatter(values, precision=1, commas=True, parens=True, nan='nan', prefix=None, pcts=False,
+                    trunc_dot_zeros=False):
     """Based on the values, return the most suitable formatter
     Parameters
     ----------
@@ -251,9 +250,9 @@ def guess_formatter(values, precision=1, commas=True, parens=True, nan='nan', pr
                     return new_int_formatter(**formatter_args)
                 else:
                     return new_float_formatter(**formatter_args)
-    except:
-        # import sys
-        # e = sys.exc_info()[0]
+    except Exception as e:
+        import warnings
+        warnings.warn(f'Undocumented exception on tia/util/fmt: {e}', category=ResourceWarning)
         return lambda x: x
 
 
@@ -291,8 +290,8 @@ class DynamicNumberFormat(object):
             return guess_formatter(value, **self.formatter_args)(value, **kwargs)
 
 
-def new_dynamic_formatter(method=None, precision=1, commas=True, parens=True, nan='nan', prefix=None, pcts=0,
-                          trunc_dot_zeros=0):
+def new_dynamic_formatter(method=None, precision=1, commas=True, parens=True, nan='nan', prefix=None, pcts=False,
+                          trunc_dot_zeros=False):
     return DynamicNumberFormat(**locals())
 
 
@@ -312,7 +311,7 @@ BillionDollarsFormatter = new_billions_formatter(prefix='$')
 TrillionDollarsFormatter = new_trillions_formatter(prefix='$')
 YmdFormatter = new_datetime_formatter('%Y%m%d', True)
 Y_m_dFormatter = new_datetime_formatter('%Y_%m_%d', True)
-DynamicNumberFormatter = DynamicNumberFormat(method='col', pcts=1, trunc_dot_zeros=1)
-DynamicRowFormatter = DynamicNumberFormat(method='row', pcts=1, trunc_dot_zeros=1)
-DynamicColumnFormatter = DynamicNumberFormat(method='col', pcts=1, trunc_dot_zeros=1)
-DynamicCellFormatter = DynamicNumberFormat(method='cell', pcts=1, trunc_dot_zeros=1)
+DynamicNumberFormatter = DynamicNumberFormat(method='col', pcts=True, trunc_dot_zeros=True)
+DynamicRowFormatter = DynamicNumberFormat(method='row', pcts=True, trunc_dot_zeros=True)
+DynamicColumnFormatter = DynamicNumberFormat(method='col', pcts=True, trunc_dot_zeros=True)
+DynamicCellFormatter = DynamicNumberFormat(method='cell', pcts=True, trunc_dot_zeros=True)

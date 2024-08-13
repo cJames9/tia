@@ -79,7 +79,7 @@ class ShortTermReport(object):
             tmp = s(r.port, PortfolioSummary.analyze_returns)
             tmp['desc'] = r.desc
             tmp['sid'] = r.sid
-            tmp = tmp.set_index(['sid', 'desc'], append=1).reorder_levels([2, 1, 0])
+            tmp = tmp.set_index(['sid', 'desc'], append=True).reorder_levels([2, 1, 0])
             pieces.append(tmp)
         frame = pd.concat(pieces)
 
@@ -108,7 +108,8 @@ class ShortTermReport(object):
         # Setup stylesheet
         tb = ParagraphStyle('TitleBar', parent=pdf.stylesheet['Normal'], fontName='Helvetica-Bold', fontSize=10,
                             leading=10, alignment=TA_CENTER)
-        'TitleBar' not in pdf.stylesheet and pdf.stylesheet.add(tb)
+        if 'TitleBar' not in pdf.stylesheet:
+            pdf.stylesheet.add(tb)
         # define templates
         self.define_portfolio_summary_template()
         self.define_position_summary_template()
@@ -138,7 +139,7 @@ class ShortTermReport(object):
 
         def dofmt(t):
             t.apply_basic_style(cmap=self.table_style)
-            [row.guess_format(pcts=1, trunc_dot_zeros=1) for row in t.cells.iter_rows()]
+            [row.guess_format(pcts=True, trunc_dot_zeros=True) for row in t.cells.iter_rows()]
             ncols = len(t.formatted_values.columns)
             t.set_col_widths(pcts=[1. / ncols] * ncols)
 
@@ -189,13 +190,13 @@ class ShortTermReport(object):
         figures.savefig(key='ls', clear=1)
         # Sharpe / Ann Vol
         f, ax = self.create_ax()
-        perf.sharpe_annualized(port.monthly_rets, expanding=1).iloc[3:].plot(ax=ax, color='k', label='sharpe')
+        perf.sharpe_annualized(port.monthly_rets, expanding=True).iloc[3:].plot(ax=ax, color='k', label='sharpe')
         ax.set_ylabel('sharpe ann', color='k')
         ax2 = ax.twinx()
-        perf.std_annualized(port.monthly_rets, expanding=1).iloc[3:].plot(ax=ax2, label='vol', color='b', alpha=1)
+        perf.std_annualized(port.monthly_rets, expanding=True).iloc[3:].plot(ax=ax2, label='vol', color='b', alpha=1)
         ax2.set_ylabel('vol ann', color='b')
         plt.tight_layout()
-        figures.savefig(key='sharpe', clear=1)
+        figures.savefig(key='sharpe', clear=True)
         # Monthly Returns Bar Chart
         f, ax = self.create_ax()
         tmp = pd.DataFrame({'All': port.monthly_rets.to_period('M'),
@@ -205,28 +206,30 @@ class ShortTermReport(object):
         AxesFormat().Y.percent().X.rotate().apply()
         plt.tight_layout()
         ax.set_title('Monthly Returns')
-        figures.savefig(key='mrets', clear=1)
+        figures.savefig(key='mrets', clear=True)
         # Monthly Returns Box Plot
         f, ax = self.create_ax()
         sns.boxplot(tmp, ax=ax, color=['gray', self.long_color, self.short_color])
         ax.set_title('Monthly Returns')
         AxesFormat().Y.percent().apply()
         plt.tight_layout()
-        figures.savefig(key='mrets_box', clear=1)
+        figures.savefig(key='mrets_box', clear=True)
         # Build the PDF Page
-        toimg = lambda path: rlab.new_dynamic_image(path)
         itms = {
-            'F1': toimg(figures['buyhold']),
-            'F2': toimg(figures['dd']),
-            'F3': toimg(figures['ls']),
-            'F4': toimg(figures['mrets']),
-            'F5': toimg(figures['sharpe']),
-            'F6': toimg(figures['mrets_box']),
+            'F1': self.to_img(figures['buyhold']),
+            'F2': self.to_img(figures['dd']),
+            'F3': self.to_img(figures['ls']),
+            'F4': self.to_img(figures['mrets']),
+            'F5': self.to_img(figures['sharpe']),
+            'F6': self.to_img(figures['mrets_box']),
             'F7': stable,
             'F8': dtable,
             'HDR': self.title_bar(f'{result.sid} - {result.desc} - portfolio summary')
         }
         pdf.build_page('portfolio', itms)
+
+    def to_img(self, path):
+        return rlab.new_dynamic_image(path)
 
     def add_position_page(self, result):
         def dofmt(t):
@@ -243,7 +246,6 @@ class ShortTermReport(object):
         pdf = self.pdf
         figures = self.figures
         port = result.port
-        buyhold = result.buyhold
 
         sframe = pd.DataFrame({'all': port.positions.stats.series,
                                'long': port.long.positions.stats.series,
@@ -280,11 +282,10 @@ class ShortTermReport(object):
         sns.pairplot(tmp, hue='side', size=3, diag_kws=diag_kws)
         figures.savefig(key='pos_pair', clear=1)
 
-        toimg = lambda path: rlab.new_dynamic_image(path)
         itms = {
-            'F1': toimg(figures['pos_rng']),
-            'F3': toimg(figures['pos_ls']),
-            'F2': toimg(figures['pos_pair']),
+            'F1': self.to_img(figures['pos_rng']),
+            'F3': self.to_img(figures['pos_ls']),
+            'F2': self.to_img(figures['pos_pair']),
             'F5': stable,
             'F6': dtable,
             'HDR': self.title_bar(f'{result.sid} - {result.desc} - position summary')
