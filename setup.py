@@ -17,7 +17,7 @@ PACKAGE = 'tia'
 PACKAGE_DESC = 'Toolkit for integration and analysis'
 VERSION = tia.__version__
 URL = "https://github.com/bpsmith/tia"
-REQUIRED = ['pandas', 'numpy']
+REQUIRED = ['pandas', 'numpy', 'blpapi']
 REQUIRED_FOR_TESTS = []
 
 LONG_DESC = """\
