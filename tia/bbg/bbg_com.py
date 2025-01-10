@@ -208,7 +208,6 @@ class Request(object):
     def get_bbg_request(self, svc, session):
         raise NotImplementedError()
 
-    # TODO: verificar como é feito obtenção do serviço Bloomberg
     def get_bbg_service_name(self):
         raise NotImplementedError()
 
